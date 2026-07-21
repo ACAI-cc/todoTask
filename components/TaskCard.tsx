@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Task } from "@/types";
 import { useTaskStore } from "@/store/useTaskStore";
 import { QUADRANT_CONFIG } from "@/lib/constants";
-import { relativeTime } from "@/lib/utils";
+import { relativeTime, formatFullTime } from "@/lib/utils";
 import PrioritySelector from "./PrioritySelector";
 
 interface TaskCardProps {
@@ -261,17 +261,23 @@ export default function TaskCard({
                 {task.contact}
               </span>
             )}
+            {/* 日期显示 */}
+            <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-400">
+              <span title={formatFullTime(task.createdAt)}>
+                创建 {relativeTime(task.createdAt)}
+              </span>
+              {task.completed && task.completedAt && (
+                <>
+                  <span>·</span>
+                  <span title={formatFullTime(task.completedAt)}>
+                    完成 {relativeTime(task.completedAt)}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* 时间 */}
-        <span className="text-xs text-gray-300 shrink-0 hidden group-hover:hidden">
-          {task.completed
-            ? task.completedAt
-              ? relativeTime(task.completedAt)
-              : ""
-            : relativeTime(task.createdAt)}
-        </span>
+        )}
 
         {/* 联系人按钮（仅未完成任务、非编辑态显示） */}
         {!task.completed && !isEditing && (

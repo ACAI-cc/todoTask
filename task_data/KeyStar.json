@@ -119,7 +119,7 @@
       "completed": false,
       "createdAt": 1784617918418,
       "completedAt": null,
-      "quadrant": null,
+      "quadrant": "not_important_not_urgent",
       "sourceModuleId": null,
       "movedToModuleId": null,
       "movedToTaskId": null,
@@ -133,7 +133,7 @@
       "completed": false,
       "createdAt": 1784617928589,
       "completedAt": null,
-      "quadrant": null,
+      "quadrant": "not_important_not_urgent",
       "sourceModuleId": null,
       "movedToModuleId": null,
       "movedToTaskId": null,
@@ -251,6 +251,20 @@
       "movedToTaskId": null,
       "movedAt": null,
       "contact": null
+    },
+    {
+      "id": "1784624419641-g9ylptms8",
+      "title": "网关硬件锁",
+      "moduleId": "unsorted",
+      "completed": false,
+      "createdAt": 1784624419641,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null
     }
   ],
   "modules": [
@@ -274,7 +288,7 @@
       "id": "unsorted",
       "name": "未整理的需求",
       "order": 2,
-      "visible": true,
+      "visible": false,
       "isPreset": true,
       "bgColor": "#fefce8"
     }
