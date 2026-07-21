@@ -38,11 +38,12 @@ export default function TaskCardPreview({
 
   return (
     <div className="relative bg-white rounded-lg border border-gray-300 px-3 py-2 shadow-lg no-select">
-      {/* 来源标签 */}
+      {/* 来源标签 —— 纯文字样式 */}
       {sourceModule && (
-        <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-          <span>←</span>
-          <span>{sourceModule.name}</span>
+        <div className="mb-1">
+          <span className="inline-block text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+            来自「{sourceModule.name}」
+          </span>
         </div>
       )}
 
@@ -77,14 +78,25 @@ export default function TaskCardPreview({
           )}
         </div>
 
-        {/* 任务标题 */}
-        <span
-          className={`flex-1 text-sm ${
-            task.completed ? "text-gray-400 line-through" : "text-gray-800"
-          }`}
-        >
-          {task.title}
-        </span>
+        {/* 任务标题 + 联系人 */}
+        <div className="flex-1 min-w-0">
+          <span
+            className={`text-sm ${
+              task.completed ? "text-gray-400 line-through" : "text-gray-800"
+            }`}
+          >
+            {task.title}
+          </span>
+          {task.contact && (
+            <span className="ml-2 inline-flex items-center gap-0.5 text-xs text-gray-400 align-middle">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              {task.contact}
+            </span>
+          )}
+        </div>
 
         {/* 时间 */}
         <span className="text-xs text-gray-300 shrink-0">

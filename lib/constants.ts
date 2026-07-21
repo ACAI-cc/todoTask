@@ -76,6 +76,7 @@ export const PRESET_MODULES = [
     order: 0,
     visible: true,
     isPreset: true,
+    bgColor: null,
   },
   {
     id: "paused",
@@ -83,6 +84,7 @@ export const PRESET_MODULES = [
     order: 1,
     visible: true,
     isPreset: true,
+    bgColor: null,
   },
   {
     id: "unsorted",
@@ -90,7 +92,21 @@ export const PRESET_MODULES = [
     order: 2,
     visible: false,
     isPreset: true,
+    bgColor: null,
   },
+];
+
+// 模块预设背景颜色（柔和色系）
+export const MODULE_BG_COLORS = [
+  { label: "默认白", value: null },
+  { label: "浅灰", value: "#f3f4f6" },
+  { label: "浅蓝", value: "#eff6ff" },
+  { label: "浅绿", value: "#f0fdf4" },
+  { label: "浅黄", value: "#fefce8" },
+  { label: "浅粉", value: "#fdf2f8" },
+  { label: "浅紫", value: "#faf5ff" },
+  { label: "浅橙", value: "#fff7ed" },
+  { label: "浅青", value: "#ecfeff" },
 ];
 
 // 默认数据文件名

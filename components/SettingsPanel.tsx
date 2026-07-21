@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTaskStore } from "@/store/useTaskStore";
+import { MODULE_BG_COLORS } from "@/lib/constants";
 
 export default function SettingsPanel() {
   const settingsOpen = useTaskStore((s) => s.settingsOpen);
@@ -12,6 +13,7 @@ export default function SettingsPanel() {
   const renameModule = useTaskStore((s) => s.renameModule);
   const reorderModule = useTaskStore((s) => s.reorderModule);
   const toggleModuleVisible = useTaskStore((s) => s.toggleModuleVisible);
+  const setModuleBgColor = useTaskStore((s) => s.setModuleBgColor);
   const exportData = useTaskStore((s) => s.exportData);
   const importData = useTaskStore((s) => s.importData);
 
@@ -25,6 +27,8 @@ export default function SettingsPanel() {
   const [newModuleName, setNewModuleName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [colorPickerId, setColorPickerId] = useState<string | null>(null);
+  const [customColor, setCustomColor] = useState("");
 
   const sortedModules = [...modules].sort((a, b) => a.order - b.order);
 
@@ -268,6 +272,93 @@ export default function SettingsPanel() {
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                   </button>
+
+                  {/* 背景颜色按钮 */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setColorPickerId(
+                          colorPickerId === module.id ? null : module.id
+                        );
+                        setCustomColor(module.bgColor || "");
+                      }}
+                      className="p-1 rounded border border-gray-200 hover:border-gray-300"
+                      title="设置背景颜色"
+                    >
+                      <div
+                        className="w-3.5 h-3.5 rounded-sm"
+                        style={{
+                          backgroundColor: module.bgColor || "#ffffff",
+                          border: "1px solid #e5e7eb",
+                        }}
+                      />
+                    </button>
+                    {colorPickerId === module.id && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setColorPickerId(null)}
+                        />
+                        <div className="absolute right-0 top-8 z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 w-48">
+                          <div className="text-xs text-gray-500 mb-2">背景颜色</div>
+                          <div className="grid grid-cols-3 gap-1.5 mb-3">
+                            {MODULE_BG_COLORS.map((color) => (
+                              <button
+                                key={color.label}
+                                onClick={() => {
+                                  setModuleBgColor(module.id, color.value);
+                                  setColorPickerId(null);
+                                }}
+                                className={`flex flex-col items-center gap-0.5 p-1 rounded hover:bg-gray-50 transition-colors ${
+                                  module.bgColor === color.value
+                                    ? "ring-1 ring-blue-300 bg-blue-50"
+                                    : ""
+                                }`}
+                                title={color.label}
+                              >
+                                <div
+                                  className="w-6 h-6 rounded border border-gray-200"
+                                  style={{
+                                    backgroundColor: color.value || "#ffffff",
+                                  }}
+                                />
+                                <span className="text-[10px] text-gray-500">
+                                  {color.label}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="border-t border-gray-100 pt-2">
+                            <div className="text-xs text-gray-500 mb-1">自定义</div>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="color"
+                                value={customColor || "#ffffff"}
+                                onChange={(e) => {
+                                  setCustomColor(e.target.value);
+                                  setModuleBgColor(module.id, e.target.value);
+                                }}
+                                className="w-7 h-7 rounded border border-gray-200 cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={customColor || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setCustomColor(val);
+                                  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                                    setModuleBgColor(module.id, val);
+                                  }
+                                }}
+                                placeholder="#ffffff"
+                                className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:border-blue-300"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                   {/* 删除按钮 */}
                   {!module.isPreset && (

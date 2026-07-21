@@ -168,7 +168,7 @@ todo/
 npm install
 
 # 2. 启动开发服务器
-npm run dev
+npm run dev （npm.cmd run dev）
 
 # 3. 浏览器访问
 # 打开 http://localhost:3000

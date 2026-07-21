@@ -34,23 +34,45 @@ export default function ModuleColumn({ module }: ModuleColumnProps) {
     data: { type: "module", moduleId: module.id },
   });
 
+  // 模块背景色
+  const bgColor = module.bgColor || "#ffffff";
+
+  // 计算背景色亮度，决定文字颜色
+  const getTextColor = (hex: string): string => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 180 ? "#1f2937" : "#ffffff";
+  };
+
+  const textColor = module.bgColor ? getTextColor(module.bgColor) : "#1f2937";
+  const subTextColor = module.bgColor ? getTextColor(module.bgColor) : "#9ca3af";
+  const borderColor = module.bgColor && getTextColor(module.bgColor) === "#ffffff" 
+    ? "rgba(255,255,255,0.1)" 
+    : "rgba(209,213,219,0.6)";
+
   return (
     <div
       ref={setNodeRef}
       onClick={() => setActiveModule(module.id)}
-      className={`flex flex-col w-[360px] shrink-0 bg-white rounded-xl border transition-colors ${
+      className={`flex flex-col w-[360px] shrink-0 rounded-xl border transition-colors ${
         isOver
-          ? "border-blue-300 bg-blue-50/30"
+          ? "border-blue-300"
           : "border-gray-200"
       }`}
+      style={{ backgroundColor: bgColor }}
     >
       {/* 模块头部 */}
-      <div className="px-4 py-3 border-b border-gray-100 shrink-0">
+      <div 
+        className="px-4 py-3 border-b shrink-0"
+        style={{ borderColor }}
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">
+          <h2 className="text-sm font-semibold" style={{ color: textColor }}>
             {module.name}
           </h2>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs" style={{ color: subTextColor }}>
             {uncompletedTasks.length} 项
           </span>
         </div>

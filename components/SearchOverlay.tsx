@@ -6,6 +6,24 @@ import { Quadrant, SearchFilters } from "@/types";
 import { QUADRANT_CONFIG, QUADRANT_LIST } from "@/lib/constants";
 import { sortTasks, relativeTime } from "@/lib/utils";
 
+// 高亮匹配文本
+function highlightText(text: string, query: string) {
+  if (!query.trim()) return text;
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const index = lowerText.indexOf(lowerQuery);
+  if (index === -1) return text;
+  return (
+    <>
+      {text.substring(0, index)}
+      <mark className="bg-yellow-200 text-inherit rounded px-0.5">
+        {text.substring(index, index + query.length)}
+      </mark>
+      {text.substring(index + query.length)}
+    </>
+  );
+}
+
 export default function SearchOverlay() {
   const searchOpen = useTaskStore((s) => s.searchOpen);
   const setSearchOpen = useTaskStore((s) => s.setSearchOpen);
@@ -26,10 +44,14 @@ export default function SearchOverlay() {
   const filteredTasks = useMemo(() => {
     let result = tasks;
 
-    // 标题模糊搜索
+    // 标题 + 联系人模糊搜索
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      result = result.filter((t) => t.title.toLowerCase().includes(query));
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(query) ||
+          (t.contact && t.contact.toLowerCase().includes(query))
+      );
     }
 
     // 模块筛选
@@ -81,7 +103,7 @@ export default function SearchOverlay() {
             onKeyDown={(e) => {
               if (e.key === "Escape") setSearchOpen(false);
             }}
-            placeholder="搜索任务标题..."
+            placeholder="搜索任务标题或联系人..."
             className="flex-1 text-sm text-gray-800 placeholder-gray-400"
           />
           <span className="text-xs text-gray-400">
@@ -220,8 +242,19 @@ export default function SearchOverlay() {
                           : "text-gray-700"
                       }`}
                     >
-                      {task.title}
+                      {highlightText(task.title, searchQuery)}
                     </span>
+
+                    {/* 联系人 */}
+                    {task.contact && (
+                      <span className="inline-flex items-center gap-0.5 text-xs text-gray-400 shrink-0">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        {highlightText(task.contact, searchQuery)}
+                      </span>
+                    )}
 
                     {/* 模块标签 */}
                     {module && (

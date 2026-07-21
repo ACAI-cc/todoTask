@@ -89,6 +89,7 @@ interface TaskStore {
   dismissDeleteToast: (toastId: string) => void;
   toggleTask: (taskId: string) => void;
   editTaskTitle: (taskId: string, title: string) => void;
+  editTaskContact: (taskId: string, contact: string | null) => void;
   moveTask: (taskId: string, toModuleId: string) => void;
   undoTaskMove: (taskId: string) => void;
   undoMove: (recordId: string) => void; // 仅用于 quadrant_change 记录
@@ -100,6 +101,7 @@ interface TaskStore {
   renameModule: (moduleId: string, name: string) => void;
   reorderModule: (moduleId: string, direction: "up" | "down") => void;
   toggleModuleVisible: (moduleId: string) => void;
+  setModuleBgColor: (moduleId: string, bgColor: string | null) => void;
 
   // ===== UI 操作 =====
   setView: (view: ViewMode) => void;
@@ -122,6 +124,25 @@ interface TaskStore {
 // 获取默认模块数据
 function getDefaultModules(): ModuleItem[] {
   return PRESET_MODULES.map((m) => ({ ...m }));
+}
+
+// 数据迁移：确保旧数据文件包含新字段
+function migrateData(data: WorkspaceData): WorkspaceData {
+  return {
+    tasks: (data.tasks || []).map((t) => ({
+      ...t,
+      contact: t.contact ?? null,
+      movedToModuleId: t.movedToModuleId ?? null,
+      movedToTaskId: t.movedToTaskId ?? null,
+      movedAt: t.movedAt ?? null,
+      sourceModuleId: t.sourceModuleId ?? null,
+    })),
+    modules: (data.modules || []).map((m) => ({
+      ...m,
+      bgColor: m.bgColor ?? null,
+    })),
+    moveRecords: data.moveRecords || [],
+  };
 }
 
 // 获取可持久化的数据
@@ -260,9 +281,9 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
             // 加载所有工作区的数据到缓存
             for (const ws of wsList) {
-              const data = await idbFallbackGet(ws.id);
-              if (data) {
-                dataCache.set(ws.id, data);
+              const rawData = await idbFallbackGet(ws.id);
+              if (rawData) {
+                dataCache.set(ws.id, migrateData(rawData));
               } else {
                 dataCache.set(ws.id, {
                   tasks: [],
@@ -330,7 +351,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           const wsList: Workspace[] = [];
           for (const handle of grantedHandles) {
             try {
-              const data = await readFileContent(handle);
+              const rawData = await readFileContent(handle);
+              const data = migrateData(rawData);
               const wsId = generateId();
               dataCache.set(wsId, data);
 
@@ -438,7 +460,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         try {
           const granted = await requestFilePermission(handle, "readwrite");
           if (granted) {
-            const data = await readFileContent(handle);
+            const rawData = await readFileContent(handle);
+            const data = migrateData(rawData);
             const wsId = generateId();
             dataCache.set(wsId, data);
 
@@ -574,7 +597,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       }
 
       const wsId = generateId();
-      dataCache.set(wsId, result.data);
+      dataCache.set(wsId, migrateData(result.data));
 
       const writer = new DebouncedFileWriter();
       writer.setHandle(result.handle);
@@ -707,9 +730,9 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       // 如果缓存中没有，尝试从文件读取
       if (!cachedData && targetWs.fileHandle) {
         try {
-          const data = await readFileContent(targetWs.fileHandle);
-          cachedData = data;
-          dataCache.set(workspaceId, data);
+          const rawData = await readFileContent(targetWs.fileHandle);
+          cachedData = migrateData(rawData);
+          dataCache.set(workspaceId, cachedData);
         } catch {
           // 读取失败，使用空数据
         }
@@ -821,6 +844,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         movedToModuleId: null,
         movedToTaskId: null,
         movedAt: null,
+        contact: null,
       };
 
       set((state) => ({
@@ -926,6 +950,18 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       triggerSave();
     },
 
+    editTaskContact: (taskId, contact) => {
+      const trimmed = contact ? contact.trim() : "";
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, contact: trimmed || null }
+            : t
+        ),
+      }));
+      triggerSave();
+    },
+
     moveTask: (taskId, toModuleId) => {
       const state = get();
       const task = state.tasks.find((t) => t.id === taskId);
@@ -948,6 +984,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         movedToTaskId: null,
         movedAt: null,
         createdAt: moveTime,
+        contact: task.contact, // 保留联系人信息
       };
 
       // 原任务保留在原模块，标记为已完成并记录移动信息
@@ -1061,6 +1098,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         order: maxOrder + 1,
         visible: false,
         isPreset: false,
+        bgColor: null,
       };
       set((s) => ({ modules: [...s.modules, newModule] }));
       triggerSave();
@@ -1120,6 +1158,15 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       triggerSave();
     },
 
+    setModuleBgColor: (moduleId, bgColor) => {
+      set((s) => ({
+        modules: s.modules.map((m) =>
+          m.id === moduleId ? { ...m, bgColor } : m
+        ),
+      }));
+      triggerSave();
+    },
+
     // ===== UI 操作 =====
     setView: (view) => set({ view }),
     setActiveModule: (moduleId) => set({ activeModuleId: moduleId }),
@@ -1143,9 +1190,10 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     },
 
     importData: async () => {
-      const data = await importDataFromFile();
-      if (!data) return;
+      const rawData = await importDataFromFile();
+      if (!rawData) return;
 
+      const data = migrateData(rawData);
       const wsId = get().activeWorkspaceId;
       if (wsId) {
         dataCache.set(wsId, data);

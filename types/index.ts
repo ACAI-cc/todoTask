@@ -19,6 +19,7 @@ export interface Task {
   movedToModuleId: string | null; // 被移至的目标模块 ID
   movedToTaskId: string | null; // 目标模块中的副本任务 ID
   movedAt: number | null; // 移动发生的时间
+  contact: string | null; // 联系人姓名（可选）
 }
 
 // 模块类型
@@ -28,6 +29,7 @@ export interface ModuleItem {
   order: number;
   visible: boolean;
   isPreset: boolean;
+  bgColor: string | null; // 自定义背景颜色（HEX 值，null 为默认白色）
 }
 
 // 移动记录类型（留在原模块中的追溯记录）

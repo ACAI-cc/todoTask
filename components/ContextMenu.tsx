@@ -12,13 +12,23 @@ export default function ContextMenu() {
   const modules = useTaskStore((s) => s.modules);
   const moveTask = useTaskStore((s) => s.moveTask);
   const setQuadrant = useTaskStore((s) => s.setQuadrant);
+  const editTaskContact = useTaskStore((s) => s.editTaskContact);
   const [showMoveSubmenu, setShowMoveSubmenu] = useState(false);
+  const [showContactInput, setShowContactInput] = useState(false);
+  const [contactValue, setContactValue] = useState("");
+  const contactInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!contextMenu) {
       setShowMoveSubmenu(false);
+      setShowContactInput(false);
       return;
+    }
+
+    if (showContactInput && contactInputRef.current) {
+      contactInputRef.current.focus();
+      contactInputRef.current.select();
     }
 
     const handleClickOutside = (e: MouseEvent) => {
@@ -28,7 +38,13 @@ export default function ContextMenu() {
     };
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setContextMenu(null);
+      if (e.key === "Escape") {
+        if (showContactInput) {
+          setShowContactInput(false);
+        } else {
+          setContextMenu(null);
+        }
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -37,7 +53,7 @@ export default function ContextMenu() {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [contextMenu, setContextMenu]);
+  }, [contextMenu, setContextMenu, showContactInput]);
 
   if (!contextMenu) return null;
 
@@ -102,6 +118,53 @@ export default function ContextMenu() {
           </div>
         )}
       </div>
+
+      <div className="border-t border-gray-100 my-1" />
+
+      {/* 编辑联系人 */}
+      {showContactInput ? (
+        <div className="px-3 py-1">
+          <input
+            ref={contactInputRef}
+            type="text"
+            value={contactValue}
+            onChange={(e) => setContactValue(e.target.value)}
+            onBlur={() => {
+              const trimmed = contactValue.trim();
+              if (trimmed !== (task.contact || "")) {
+                editTaskContact(task.id, trimmed || null);
+              }
+              setShowContactInput(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const trimmed = contactValue.trim();
+                if (trimmed !== (task.contact || "")) {
+                  editTaskContact(task.id, trimmed || null);
+                }
+                setShowContactInput(false);
+              }
+            }}
+            className="w-full text-sm px-2 py-1 border border-blue-300 rounded focus:outline-none"
+            placeholder="输入联系人姓名..."
+          />
+        </div>
+      ) : (
+        <button
+          onClick={() => {
+            setContactValue(task.contact || "");
+            setShowContactInput(true);
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span>{task.contact ? `编辑联系人：${task.contact}` : "添加联系人"}</span>
+        </button>
+      )}
 
       <div className="border-t border-gray-100 my-1" />
 
