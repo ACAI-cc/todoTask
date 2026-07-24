@@ -73,6 +73,10 @@ interface TaskStore {
   contextMenu: ContextMenuState | null;
   deleteToasts: DeleteToastItem[];
 
+  // ===== 日历视图状态 =====
+  calendarSubview: "month" | "week" | "day";
+  calendarDate: string;
+
   // ===== 工作区操作 =====
   initStore: () => Promise<void>;
   restoreWorkspacesWithPermission: () => Promise<void>;
@@ -113,6 +117,12 @@ interface TaskStore {
   setSearchFilters: (filters: Partial<SearchFilters>) => void;
   setContextMenu: (menu: ContextMenuState | null) => void;
 
+  // ===== 日历视图操作 =====
+  setCalendarSubview: (subview: "month" | "week" | "day") => void;
+  setCalendarDate: (date: Date) => void;
+  navigateCalendar: (direction: "prev" | "next") => void;
+  goToToday: () => void;
+
   // ===== 数据导入导出 =====
   exportData: () => void;
   importData: () => Promise<void>;
@@ -136,6 +146,7 @@ function migrateData(data: WorkspaceData): WorkspaceData {
       movedToTaskId: t.movedToTaskId ?? null,
       movedAt: t.movedAt ?? null,
       sourceModuleId: t.sourceModuleId ?? null,
+      originId: t.originId ?? t.id,
     })),
     modules: (data.modules || []).map((m) => ({
       ...m,
@@ -261,6 +272,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     },
     contextMenu: null,
     deleteToasts: [],
+    calendarSubview: "month",
+    calendarDate: new Date().toISOString(),
 
     // ===== 初始化 =====
     initStore: async () => {
@@ -750,6 +763,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           (cachedData && cachedData.modules[0]?.id) || "not-started",
         selectedTaskId: null,
         deleteToasts: [],
+        calendarSubview: "month",
+        calendarDate: new Date().toISOString(),
       });
 
       // 保存最后活跃工作区名（用于刷新恢复）
@@ -832,8 +847,9 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       const trimmed = title.trim();
       if (!trimmed) return;
 
+      const newTaskId = generateId();
       const newTask: Task = {
-        id: generateId(),
+        id: newTaskId,
         title: trimmed,
         moduleId,
         completed: false,
@@ -845,6 +861,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         movedToTaskId: null,
         movedAt: null,
         contact: null,
+        originId: newTaskId,
       };
 
       set((state) => ({
@@ -985,6 +1002,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         movedAt: null,
         createdAt: moveTime,
         contact: task.contact, // 保留联系人信息
+        originId: task.originId, // 继承原任务的 originId
       };
 
       // 原任务保留在原模块，标记为已完成并记录移动信息
@@ -1181,6 +1199,26 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     setSearchFilters: (filters) =>
       set((s) => ({ searchFilters: { ...s.searchFilters, ...filters } })),
     setContextMenu: (menu) => set({ contextMenu: menu }),
+
+    // ===== 日历视图操作 =====
+    setCalendarSubview: (subview) => set({ calendarSubview: subview }),
+    setCalendarDate: (date) => set({ calendarDate: date.toISOString() }),
+    navigateCalendar: (direction) => {
+      const state = get();
+      const currentDate = new Date(state.calendarDate);
+      const newDate = new Date(currentDate);
+      
+      if (state.calendarSubview === "month") {
+        newDate.setMonth(currentDate.getMonth() + (direction === "next" ? 1 : -1));
+      } else if (state.calendarSubview === "week") {
+        newDate.setDate(currentDate.getDate() + (direction === "next" ? 7 : -7));
+      } else {
+        newDate.setDate(currentDate.getDate() + (direction === "next" ? 1 : -1));
+      }
+      
+      set({ calendarDate: newDate.toISOString() });
+    },
+    goToToday: () => set({ calendarDate: new Date().toISOString() }),
 
     // ===== 数据导入导出 =====
     exportData: () => {

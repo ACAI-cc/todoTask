@@ -28,6 +28,11 @@ export default function Header() {
             active={view === "quadrant"}
             onClick={() => setView("quadrant")}
           />
+          <ViewTab
+            label="📅 日历视图"
+            active={view === "calendar"}
+            onClick={() => setView("calendar")}
+          />
         </div>
       </div>
 

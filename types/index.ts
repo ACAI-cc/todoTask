@@ -20,6 +20,7 @@ export interface Task {
   movedToTaskId: string | null; // 目标模块中的副本任务 ID
   movedAt: number | null; // 移动发生的时间
   contact: string | null; // 联系人姓名（可选）
+  originId: string; // 原始任务 ID（直接创建的任务 originId = id，拖拽产生的副本继承原任务的 originId）
 }
 
 // 模块类型
@@ -68,7 +69,7 @@ export interface PersistedData {
 }
 
 // 视图类型
-export type ViewMode = "module" | "quadrant";
+export type ViewMode = "module" | "quadrant" | "calendar";
 
 // 右键菜单状态
 export interface ContextMenuState {

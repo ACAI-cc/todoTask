@@ -6,6 +6,7 @@ import OnboardingScreen from "@/components/OnboardingScreen";
 import Header from "@/components/Header";
 import ModuleView from "@/components/ModuleView";
 import QuadrantView from "@/components/QuadrantView";
+import CalendarView from "@/components/CalendarView";
 import SettingsPanel from "@/components/SettingsPanel";
 import SearchOverlay from "@/components/SearchOverlay";
 import ContextMenu from "@/components/ContextMenu";
@@ -131,7 +132,13 @@ export default function Home() {
       <Header />
       <UnsupportedWarning />
       <main className="flex-1 overflow-hidden">
-        {view === "module" ? <ModuleView /> : <QuadrantView />}
+        {view === "module" ? (
+          <ModuleView />
+        ) : view === "quadrant" ? (
+          <QuadrantView />
+        ) : (
+          <CalendarView />
+        )}
       </main>
 
       {/* 浮层组件 */}
