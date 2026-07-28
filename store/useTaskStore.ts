@@ -12,8 +12,13 @@ import {
   Workspace,
   WorkspaceData,
 } from "@/types";
+import type { SyncStatus } from "@/types/electron";
 import { PRESET_MODULES, DELETE_UNDO_SECONDS } from "@/lib/constants";
-import { generateId, isFileSystemAccessSupported } from "@/lib/utils";
+import {
+  generateId,
+  isFileSystemAccessSupported,
+  isElectron,
+} from "@/lib/utils";
 import {
   DebouncedFileWriter,
   createNewFile,
@@ -34,13 +39,24 @@ import {
   exportDataAsFile,
   importDataFromFile,
 } from "@/lib/fileStorage";
+import {
+  ElectronFileWriter,
+  electronListWorkspaces,
+  electronReadWorkspace,
+  electronCreateWorkspace,
+  electronRenameWorkspace,
+  onSyncStatusUpdate,
+  triggerManualSync,
+  setAutoPushEnabled,
+  getSyncStatus,
+} from "@/lib/electronStorage";
 
 // ============================================================
 // 模块级（非 Zustand 状态）：文件写入器和数据缓存
 // ============================================================
 
-// 每个工作区一个独立的防抖写入器
-const fileWriters = new Map<string, DebouncedFileWriter>();
+// 每个工作区一个独立的防抖写入器（浏览器模式用 DebouncedFileWriter，Electron 模式用 ElectronFileWriter）
+const fileWriters = new Map<string, DebouncedFileWriter | ElectronFileWriter>();
 
 // 工作区数据缓存：切换工作区时先缓存当前数据，再加载新数据
 const dataCache = new Map<string, WorkspaceData>();
@@ -52,6 +68,10 @@ interface TaskStore {
   // ===== 工作区管理 =====
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
+  isElectron: boolean; // 是否在 Electron 桌面应用环境中
+
+  // ===== Git 同步状态（仅 Electron 模式）=====
+  syncStatus: SyncStatus | null;
 
   // ===== 当前工作区数据（始终反映 activeWorkspaceId）=====
   tasks: Task[];
@@ -127,6 +147,10 @@ interface TaskStore {
   exportData: () => void;
   importData: () => Promise<void>;
 
+  // ===== Git 同步操作（仅 Electron 模式）=====
+  triggerManualSync: () => Promise<void>;
+  setAutoPush: (enabled: boolean) => Promise<void>;
+
   // ===== 内部方法 =====
   _triggerSave: () => void;
 }
@@ -178,6 +202,16 @@ function getAllHandles(state: TaskStore): FileSystemFileHandle[] {
     .filter((h): h is FileSystemFileHandle => h !== null);
 }
 
+// 设置 Git 同步状态监听（仅 Electron 模式有效）
+function setupSyncListener(set: (partial: Partial<TaskStore>) => void) {
+  if (!isElectron()) return;
+  const unsubscribe = onSyncStatusUpdate((status) => {
+    set({ syncStatus: status });
+  });
+  // 注意：unsubscribe 在应用生命周期内不需要手动调用
+  // 如果需要清理，可以存储到模块级变量中
+}
+
 export const useTaskStore = create<TaskStore>((set, get) => {
   // 内部：缓存当前工作区数据到 dataCache
   const cacheCurrentData = () => {
@@ -202,8 +236,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     // 更新内存缓存
     dataCache.set(wsId, data);
 
-    if (state.fileSupported) {
-      // 使用 File System Access API 写入对应文件
+    if (state.isElectron || state.fileSupported) {
+      // Electron 模式使用 ElectronFileWriter（IPC 写入），浏览器模式使用 DebouncedFileWriter
       const writer = fileWriters.get(wsId);
       if (writer) {
         writer.write(data);
@@ -233,9 +267,10 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     }
   };
 
-  // 内部：持久化句柄/元数据到 IndexedDB
+  // 内部：持久化句柄/元数据到 IndexedDB（仅浏览器模式需要）
   const persistToIDB = async () => {
     const state = get();
+    if (state.isElectron) return; // Electron 模式不需要持久化到 IDB
     if (state.fileSupported) {
       const handles = getAllHandles(state);
       await saveFileHandlesToIDB(handles);
@@ -252,6 +287,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     // ===== 初始状态 =====
     workspaces: [],
     activeWorkspaceId: null,
+    isElectron: isElectron(),
+    syncStatus: null,
     tasks: [],
     modules: getDefaultModules(),
     moveRecords: [],
@@ -278,6 +315,92 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     // ===== 初始化 =====
     initStore: async () => {
       set({ isInitializing: true });
+
+      // ===== Electron 桌面应用模式 =====
+      if (isElectron()) {
+        set({ isElectron: true, fileSupported: false });
+
+        try {
+          // 列出 taskData/ 目录下所有 .json 文件
+          const filenames = await electronListWorkspaces();
+
+          if (filenames.length === 0) {
+            // 没有工作区文件，显示引导界面
+            set({ isOnboarded: false, isInitializing: false });
+            // 仍然设置同步状态监听
+            setupSyncListener(set);
+            return;
+          }
+
+          // 加载每个文件的数据
+          const wsList: Workspace[] = [];
+          for (const filename of filenames) {
+            try {
+              const rawData = await electronReadWorkspace(filename);
+              const data = migrateData(rawData);
+              const wsId = generateId();
+              dataCache.set(wsId, data);
+
+              // 创建 ElectronFileWriter
+              const writer = new ElectronFileWriter();
+              writer.setFilename(filename);
+              fileWriters.set(wsId, writer);
+
+              wsList.push({
+                id: wsId,
+                name: filename,
+                filename,
+                fileHandle: null,
+                loaded: true,
+              });
+            } catch {
+              // 读取文件失败，跳过
+            }
+          }
+
+          if (wsList.length === 0) {
+            set({ isOnboarded: false, isInitializing: false });
+            setupSyncListener(set);
+            return;
+          }
+
+          // 尝试恢复上次活跃的工作区（按文件名匹配）
+          let lastActiveName: string | null = null;
+          try {
+            lastActiveName = await loadLastActiveWorkspaceName();
+          } catch {}
+
+          const targetWs =
+            wsList.find((w) => w.name === lastActiveName) || wsList[0];
+
+          set({
+            workspaces: wsList,
+            activeWorkspaceId: targetWs.id,
+            isOnboarded: true,
+            isInitializing: false,
+          });
+          loadWorkspaceData(targetWs.id);
+
+          try {
+            await saveLastActiveWorkspaceName(targetWs.name);
+          } catch {}
+
+          // 设置同步状态监听并获取初始状态
+          setupSyncListener(set);
+          try {
+            const status = await getSyncStatus();
+            if (status) set({ syncStatus: status });
+          } catch {}
+
+          return;
+        } catch (err) {
+          console.error("Electron 初始化失败:", err);
+          set({ isOnboarded: false, isInitializing: false });
+          return;
+        }
+      }
+
+      // ===== 浏览器模式 =====
       const supported = isFileSystemAccessSupported();
 
       if (!supported) {
@@ -534,6 +657,66 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
     // ===== 工作区操作 =====
     createWorkspace: async () => {
+      // ===== Electron 模式：通过 IPC 在 taskData/ 目录创建文件 =====
+      if (get().isElectron) {
+        const input = window.prompt("请输入工作区名称（不含 .json 后缀）:");
+        if (!input || !input.trim()) return;
+
+        let name = input.trim();
+        if (!name.endsWith(".json")) name += ".json";
+
+        try {
+          await electronCreateWorkspace(name);
+        } catch (err: any) {
+          alert(`创建工作区失败: ${err.message || err}`);
+          return;
+        }
+
+        const state = get();
+        const wsId = generateId();
+        const defaultModules = getDefaultModules();
+        const initialData: WorkspaceData = {
+          tasks: [],
+          modules: defaultModules,
+          moveRecords: [],
+        };
+
+        // 缓存当前工作区数据
+        if (state.activeWorkspaceId) {
+          cacheCurrentData();
+        }
+
+        dataCache.set(wsId, initialData);
+
+        const writer = new ElectronFileWriter();
+        writer.setFilename(name);
+        fileWriters.set(wsId, writer);
+
+        const newWorkspace: Workspace = {
+          id: wsId,
+          name,
+          filename: name,
+          fileHandle: null,
+          loaded: true,
+        };
+
+        set({
+          workspaces: [...state.workspaces, newWorkspace],
+          activeWorkspaceId: wsId,
+          isOnboarded: true,
+          tasks: initialData.tasks,
+          modules: initialData.modules,
+          moveRecords: initialData.moveRecords,
+          activeModuleId: defaultModules[0]?.id || null,
+        });
+
+        try {
+          await saveLastActiveWorkspaceName(name);
+        } catch {}
+        return;
+      }
+
+      // ===== 浏览器模式（File System Access API）=====
       const result = await createNewFile();
       if (!result) return;
 
@@ -586,6 +769,74 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     },
 
     openWorkspace: async () => {
+      // ===== Electron 模式：刷新文件列表，加载新文件 =====
+      if (get().isElectron) {
+        try {
+          const filenames = await electronListWorkspaces();
+          const existingNames = new Set(
+            get().workspaces.map((w) => w.filename)
+          );
+          const newFiles = filenames.filter((f) => !existingNames.has(f));
+
+          if (newFiles.length === 0) {
+            alert("taskData/ 目录中没有新的工作区文件可打开");
+            return;
+          }
+
+          // 缓存当前工作区
+          if (get().activeWorkspaceId) {
+            cacheCurrentData();
+          }
+
+          // 加载新文件
+          const newWorkspaces: Workspace[] = [];
+          for (const filename of newFiles) {
+            try {
+              const rawData = await electronReadWorkspace(filename);
+              const data = migrateData(rawData);
+              const wsId = generateId();
+              dataCache.set(wsId, data);
+
+              const writer = new ElectronFileWriter();
+              writer.setFilename(filename);
+              fileWriters.set(wsId, writer);
+
+              newWorkspaces.push({
+                id: wsId,
+                name: filename,
+                filename,
+                fileHandle: null,
+                loaded: true,
+              });
+            } catch {
+              // 读取失败，跳过
+            }
+          }
+
+          if (newWorkspaces.length === 0) {
+            alert("读取新工作区文件失败");
+            return;
+          }
+
+          const allWorkspaces = [...get().workspaces, ...newWorkspaces];
+          const targetWs = newWorkspaces[0];
+
+          set({
+            workspaces: allWorkspaces,
+            activeWorkspaceId: targetWs.id,
+          });
+          loadWorkspaceData(targetWs.id);
+
+          try {
+            await saveLastActiveWorkspaceName(targetWs.name);
+          } catch {}
+        } catch (err: any) {
+          alert(`打开工作区失败: ${err.message || err}`);
+        }
+        return;
+      }
+
+      // ===== 浏览器模式（File System Access API）=====
       const result = await openExistingFile();
       if (!result) return;
 
@@ -668,8 +919,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       // 清理缓存
       dataCache.delete(workspaceId);
 
-      // 降级模式下删除 IDB 中的数据
-      if (!state.fileSupported) {
+      // 降级模式下删除 IDB 中的数据（Electron 模式和 File System Access API 模式不删除）
+      if (!state.fileSupported && !state.isElectron) {
         await idbFallbackDelete(workspaceId);
       }
 
@@ -741,13 +992,25 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       let cachedData = dataCache.get(workspaceId);
 
       // 如果缓存中没有，尝试从文件读取
-      if (!cachedData && targetWs.fileHandle) {
-        try {
-          const rawData = await readFileContent(targetWs.fileHandle);
-          cachedData = migrateData(rawData);
-          dataCache.set(workspaceId, cachedData);
-        } catch {
-          // 读取失败，使用空数据
+      if (!cachedData) {
+        if (targetWs.filename && get().isElectron) {
+          // Electron 模式：通过 IPC 读取文件
+          try {
+            const rawData = await electronReadWorkspace(targetWs.filename);
+            cachedData = migrateData(rawData);
+            dataCache.set(workspaceId, cachedData);
+          } catch {
+            // 读取失败，使用空数据
+          }
+        } else if (targetWs.fileHandle) {
+          // 浏览器模式：通过 File System Access API 读取
+          try {
+            const rawData = await readFileContent(targetWs.fileHandle);
+            cachedData = migrateData(rawData);
+            dataCache.set(workspaceId, cachedData);
+          } catch {
+            // 读取失败，使用空数据
+          }
         }
       }
 
@@ -776,6 +1039,52 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     },
 
     renameWorkspace: async (workspaceId) => {
+      // ===== Electron 模式：通过 IPC 重命名文件 =====
+      if (get().isElectron) {
+        const state = get();
+        const ws = state.workspaces.find((w) => w.id === workspaceId);
+        if (!ws || !ws.filename) return;
+
+        const input = window.prompt("请输入新的工作区名称:", ws.filename);
+        if (!input || !input.trim()) return;
+
+        let newName = input.trim();
+        if (!newName.endsWith(".json")) newName += ".json";
+
+        if (newName === ws.filename) return;
+
+        try {
+          await electronRenameWorkspace(ws.filename, newName);
+        } catch (err: any) {
+          alert(`重命名失败: ${err.message || err}`);
+          return;
+        }
+
+        // 更新写入器的文件名
+        const writer = fileWriters.get(workspaceId);
+        if (writer instanceof ElectronFileWriter) {
+          writer.setFilename(newName);
+        }
+
+        // 更新工作区列表
+        const wasActive = state.activeWorkspaceId === workspaceId;
+        const newWorkspaces = state.workspaces.map((w) =>
+          w.id === workspaceId
+            ? { ...w, name: newName, filename: newName }
+            : w
+        );
+
+        set({ workspaces: newWorkspaces });
+
+        if (wasActive) {
+          try {
+            await saveLastActiveWorkspaceName(newName);
+          } catch {}
+        }
+        return;
+      }
+
+      // ===== 浏览器模式：重命名 = "另存为" 新文件 + 移除旧工作区引用 =====
       // 重命名 = "另存为" 新文件 + 移除旧工作区引用
       const state = get();
       const ws = state.workspaces.find((w) => w.id === workspaceId);
@@ -1245,6 +1554,35 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         moveRecords: data.moveRecords || [],
       });
       triggerSave();
+    },
+
+    // ===== Git 同步操作（仅 Electron 模式）=====
+
+    // 手动触发 Git 同步
+    triggerManualSync: async () => {
+      if (!get().isElectron) return;
+      try {
+        await triggerManualSync();
+      } catch (err) {
+        console.error("手动同步失败:", err);
+      }
+    },
+
+    // 设置自动推送开关
+    setAutoPush: async (enabled) => {
+      if (!get().isElectron) return;
+      try {
+        await setAutoPushEnabled(enabled);
+        // 立即更新本地状态
+        const currentStatus = get().syncStatus;
+        if (currentStatus) {
+          set({
+            syncStatus: { ...currentStatus, autoPushEnabled: enabled },
+          });
+        }
+      } catch (err) {
+        console.error("设置自动推送失败:", err);
+      }
     },
 
     // ===== 内部方法 =====

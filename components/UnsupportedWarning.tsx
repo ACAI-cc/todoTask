@@ -5,8 +5,10 @@ import { useTaskStore } from "@/store/useTaskStore";
 export default function UnsupportedWarning() {
   const fileSupported = useTaskStore((s) => s.fileSupported);
   const isOnboarded = useTaskStore((s) => s.isOnboarded);
+  const isElectron = useTaskStore((s) => s.isElectron);
 
-  if (fileSupported || !isOnboarded) return null;
+  // Electron 模式不显示此警告（使用 IPC 而非 File System Access API）
+  if (fileSupported || !isOnboarded || isElectron) return null;
 
   return (
     <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center">

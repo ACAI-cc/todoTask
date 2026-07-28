@@ -23,6 +23,10 @@ export default function SettingsPanel() {
   const openWorkspace = useTaskStore((s) => s.openWorkspace);
   const closeWorkspace = useTaskStore((s) => s.closeWorkspace);
   const renameWorkspace = useTaskStore((s) => s.renameWorkspace);
+  const isElectron = useTaskStore((s) => s.isElectron);
+  const syncStatus = useTaskStore((s) => s.syncStatus);
+  const triggerManualSync = useTaskStore((s) => s.triggerManualSync);
+  const setAutoPush = useTaskStore((s) => s.setAutoPush);
 
   const [newModuleName, setNewModuleName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -101,7 +105,7 @@ export default function SettingsPanel() {
                   <span className={`flex-1 text-sm truncate ${
                     ws.id === activeWorkspaceId ? "text-blue-700 font-medium" : "text-gray-700"
                   }`}>
-                    {ws.name}
+                    {isElectron ? `taskData/${ws.name}` : ws.name}
                   </span>
                   {ws.id === activeWorkspaceId && (
                     <span className="text-xs text-blue-500 shrink-0">当前</span>
@@ -144,10 +148,12 @@ export default function SettingsPanel() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
               </svg>
-              打开工作区
+              {isElectron ? "刷新工作区列表" : "打开工作区"}
             </button>
             <p className="mt-2 text-xs text-gray-400">
-              每个工作区对应一个独立的 JSON 文件，数据完全隔离。关闭工作区仅从列表移除，文件保留在磁盘上。
+              {isElectron
+                ? "工作区文件存储在 taskData/ 目录下，每个 .json 文件是一个独立工作区。文件变更将自动同步到 Git 远程仓库。"
+                : "每个工作区对应一个独立的 JSON 文件，数据完全隔离。关闭工作区仅从列表移除，文件保留在磁盘上。"}
             </p>
           </section>
 
@@ -406,6 +412,102 @@ export default function SettingsPanel() {
               导出/导入仅影响当前工作区的数据，可用作备份。
             </p>
           </section>
+
+          {/* Git 自动同步设置（仅 Electron 模式）*/}
+          {isElectron && (
+            <section>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Git 自动同步
+              </h3>
+
+              {/* Git 状态信息 */}
+              <div className="mb-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                {syncStatus?.gitAvailable ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`w-2 h-2 rounded-full ${
+                        syncStatus.state === "error" ? "bg-red-500" :
+                        syncStatus.state === "syncing" ? "bg-blue-500 animate-pulse" :
+                        syncStatus.state === "success" ? "bg-green-500" :
+                        syncStatus.state === "pending" ? "bg-amber-500" :
+                        "bg-gray-400"
+                      }`} />
+                      <span className="text-sm text-gray-700">
+                        {syncStatus.state === "idle" && "空闲"}
+                        {syncStatus.state === "pending" && "等待同步"}
+                        {syncStatus.state === "syncing" && "正在同步..."}
+                        {syncStatus.state === "success" && "同步成功"}
+                        {syncStatus.state === "error" && "同步失败"}
+                      </span>
+                    </div>
+                    {syncStatus.message && (
+                      <p className="text-xs text-gray-500 ml-4">
+                        {syncStatus.message}
+                      </p>
+                    )}
+                    {syncStatus.lastSyncTime && (
+                      <p className="text-xs text-gray-400 ml-4 mt-0.5">
+                        上次同步: {new Date(syncStatus.lastSyncTime).toLocaleString("zh-CN")}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 text-sm">⚠️</span>
+                    <div>
+                      <p className="text-sm text-gray-700">Git 不可用</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {syncStatus?.message || "未检测到 Git 仓库，自动推送不可用。"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 自动推送开关 */}
+              {syncStatus?.gitAvailable && (
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm text-gray-700">自动推送任务数据到 Git 远程仓库</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      文件变更后 60 秒自动提交并推送
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setAutoPush(!syncStatus.autoPushEnabled)}
+                    className={`relative w-10 h-6 rounded-full transition-colors ${
+                      syncStatus.autoPushEnabled ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                        syncStatus.autoPushEnabled ? "translate-x-4" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* 立即同步按钮 */}
+              {syncStatus?.gitAvailable && (
+                <button
+                  onClick={() => triggerManualSync()}
+                  disabled={syncStatus.state === "syncing"}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className={syncStatus.state === "syncing" ? "animate-spin" : ""}>
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                  </svg>
+                  立即同步
+                </button>
+              )}
+            </section>
+          )}
+
+          {/* 分隔线 */}
+          {isElectron && <div className="border-t border-gray-100" />}
 
           {/* 快捷键说明 */}
           <section>

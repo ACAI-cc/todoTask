@@ -83,6 +83,7 @@ export interface Workspace {
   id: string;
   name: string; // 取文件名
   fileHandle: FileSystemFileHandle | null; // 降级模式下为 null
+  filename?: string | null; // Electron 模式下的文件名（如 "MyTasks.json"）
   loaded: boolean; // 数据是否已从文件加载
 }
 

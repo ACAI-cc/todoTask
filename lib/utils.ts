@@ -76,8 +76,15 @@ export function debounce<T extends (...args: any[]) => void>(
   };
 }
 
+// 检测是否在 Electron 桌面应用环境中
+export function isElectron(): boolean {
+  return typeof window !== "undefined" && !!(window as any).electronAPI;
+}
+
 // 检测浏览器是否支持 File System Access API
+// 注意：Electron 环境优先使用 IPC，不使用 File System Access API
 export function isFileSystemAccessSupported(): boolean {
+  if (isElectron()) return false;
   return (
     typeof window !== "undefined" &&
     "showSaveFilePicker" in window &&

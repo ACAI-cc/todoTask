@@ -12,6 +12,7 @@ import SearchOverlay from "@/components/SearchOverlay";
 import ContextMenu from "@/components/ContextMenu";
 import DeleteToastContainer from "@/components/DeleteToastContainer";
 import UnsupportedWarning from "@/components/UnsupportedWarning";
+import SyncStatusBar from "@/components/SyncStatusBar";
 
 export default function Home() {
   const isOnboarded = useTaskStore((s) => s.isOnboarded);
@@ -140,6 +141,9 @@ export default function Home() {
           <CalendarView />
         )}
       </main>
+
+      {/* Git 同步状态栏（仅 Electron 模式显示）*/}
+      <SyncStatusBar />
 
       {/* 浮层组件 */}
       <SettingsPanel />
