@@ -67,6 +67,18 @@ export default function SyncStatusBar() {
     }
   };
 
+  // 通过文件夹选择对话框选择代码仓库路径
+  const handleSelectFolder = async () => {
+    try {
+      const selectedPath = await window.electronAPI!.selectFolder();
+      if (selectedPath) {
+        setRepoPath(selectedPath);
+      }
+    } catch {
+      // 忽略
+    }
+  };
+
   // 格式化上次同步时间
   const formatLastSync = (timestamp: number | null): string => {
     if (!timestamp) return "从未";
@@ -222,13 +234,27 @@ export default function SyncStatusBar() {
                   <label className="text-xs text-gray-500 font-medium">
                     代码仓库根目录路径
                   </label>
-                  <input
-                    type="text"
-                    value={repoPath}
-                    onChange={(e) => setRepoPath(e.target.value)}
-                    placeholder="例如: D:\WorkBuddy\workspace\todo"
-                    className="w-full mt-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:border-blue-400 bg-white text-gray-700"
-                  />
+                  <div className="flex gap-1 mt-1">
+                    <input
+                      type="text"
+                      value={repoPath}
+                      onChange={(e) => setRepoPath(e.target.value)}
+                      placeholder="例如: D:\WorkBuddy\workspace\todo"
+                      className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:border-blue-400 bg-white text-gray-700"
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectFolder();
+                      }}
+                      className="shrink-0 px-2 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                      title="选择文件夹"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-400 mt-0.5">
                     包含 .git 目录的项目根目录的绝对路径
                   </p>

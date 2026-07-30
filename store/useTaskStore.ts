@@ -50,6 +50,7 @@ import {
   triggerManualSync,
   setAutoPushEnabled,
   getSyncStatus,
+  electronSelectAndSetRepoPath,
 } from "@/lib/electronStorage";
 
 // ============================================================
@@ -88,6 +89,7 @@ interface TaskStore {
   isOnboarded: boolean;
   isInitializing: boolean; // 初始化加载中
   needsRestoreClick: boolean; // 需要用户点击授权恢复工作区
+  showHomeScreen: boolean; // 是否显示首页（工作区选择界面），即使工作区已加载也可为 true
   fileSupported: boolean;
   settingsOpen: boolean;
   searchOpen: boolean;
@@ -106,9 +108,14 @@ interface TaskStore {
   createWorkspace: () => Promise<void>;
   openWorkspace: () => Promise<void>;
   openSpecificWorkspace: (filename: string) => Promise<void>;
+  openWorkspaceFromFolder: () => Promise<void>; // 选择文件夹并自动检测 Git 仓库
   closeWorkspace: (workspaceId: string) => Promise<void>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
   renameWorkspace: (workspaceId: string) => Promise<void>;
+
+  // ===== 首页导航 =====
+  goToHome: () => void; // 回到首页（工作区选择界面）
+  enterWorkspace: () => void; // 进入当前活跃工作区的任务界面
 
   // ===== 任务操作 =====
   createTask: (title: string, moduleId: string) => void;
@@ -155,6 +162,7 @@ interface TaskStore {
   triggerManualSync: () => Promise<void>;
   setAutoPush: (enabled: boolean) => Promise<void>;
   setCodeRepoPath: (repoPath: string, gitPath: string) => Promise<void>;
+  reconfigureSyncDir: () => Promise<void>; // 重新配置同步目录（打开文件夹选择对话框）
 
   // ===== 自定义 Prompt 对话框（替代 window.prompt，Electron 不支持）=====
   promptDialog: {
@@ -323,6 +331,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     isOnboarded: false,
     isInitializing: true,
     needsRestoreClick: false,
+    showHomeScreen: true,
     fileSupported: isFileSystemAccessSupported(),
     settingsOpen: false,
     searchOpen: false,
@@ -412,6 +421,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
             activeWorkspaceId: targetWs.id,
             isOnboarded: true,
             isInitializing: false,
+            showHomeScreen: true, // 启动时显示首页，让用户选择或切换工作区
           });
           loadWorkspaceData(targetWs.id);
 
@@ -691,8 +701,58 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
     // ===== 工作区操作 =====
     createWorkspace: async () => {
-      // ===== Electron 模式：通过 IPC 在 taskData/ 目录创建文件 =====
+      // ===== Electron 模式：选择存储目录 → 创建工作区文件 =====
       if (get().isElectron) {
+        const currentRepoPath = get().codeRepoPath;
+
+        // 如果已配置代码仓库路径，询问是否使用当前目录
+        let needSelectFolder = true;
+        if (currentRepoPath) {
+          const useCurrent = confirm(
+            `在当前代码仓库目录下创建工作区？\n\n` +
+            `当前目录: ${currentRepoPath}\n\n` +
+            `确定 = 在当前目录创建\n` +
+            `取消 = 选择其他目录`
+          );
+          needSelectFolder = !useCurrent;
+        }
+
+        // 需要选择目录：打开文件夹选择对话框 → 自动检测 Git → 设置 codeRepoPath
+        if (needSelectFolder) {
+          // allowNoGit=true：未找到 Git 仓库时仍允许创建工作区（Git 同步不可用但文件可正常存储）
+          const result = await electronSelectAndSetRepoPath(true);
+          if (!result) {
+            // 用户取消了选择
+            return;
+          }
+
+          if (!result.success && !result.codeRepoPath) {
+            // 不应该发生（allowNoGit=true 时总会返回 codeRepoPath），但防御性处理
+            alert(result.message);
+            return;
+          }
+
+          // Git 不可用但 codeRepoPath 已设置，提示用户
+          if (!result.success && result.codeRepoPath) {
+            console.warn("[TaskFlow] Git 不可用，工作区文件将正常创建但自动同步不可用:", result.message);
+          }
+
+          // 更新 store 状态
+          const newDataPath = await electronGetDataPath();
+          const newRepoPath = await window.electronAPI?.getCodeRepoPath();
+          set({
+            codeRepoPath: newRepoPath || null,
+            taskDataPath: newDataPath,
+          });
+
+          // 更新同步状态
+          try {
+            const status = await getSyncStatus();
+            if (status) set({ syncStatus: status });
+          } catch {}
+        }
+
+        // 提示输入工作区名称
         const input = await get().showPromptDialog({
           title: "新建工作区",
           label: "请输入工作区名称（不含 .json 后缀）:",
@@ -708,6 +768,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           await electronCreateWorkspace(name);
         } catch (err: any) {
           console.error("创建工作区失败:", err);
+          alert("创建工作区失败: " + (err.message || err));
           return;
         }
 
@@ -743,6 +804,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           workspaces: [...state.workspaces, newWorkspace],
           activeWorkspaceId: wsId,
           isOnboarded: true,
+          showHomeScreen: false, // 创建工作区后直接进入任务界面
           tasks: initialData.tasks,
           modules: initialData.modules,
           moveRecords: initialData.moveRecords,
@@ -1002,6 +1064,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           workspaces: [...get().workspaces, newWorkspace],
           activeWorkspaceId: wsId,
           isOnboarded: true,
+          showHomeScreen: false, // 打开工作区后直接进入任务界面
         });
         loadWorkspaceData(wsId);
 
@@ -1125,6 +1188,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
       set({
         activeWorkspaceId: workspaceId,
+        showHomeScreen: false, // 切换工作区后进入任务界面
         tasks: cachedData?.tasks || [],
         modules:
           cachedData && cachedData.modules.length > 0
@@ -1264,6 +1328,119 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       });
 
       await persistToIDB();
+    },
+
+    // 选择文件夹并自动检测 Git 仓库，加载工作区文件
+    openWorkspaceFromFolder: async () => {
+      if (!get().isElectron) return;
+
+      try {
+        set({ isInitializing: true });
+
+        // 调用主进程：打开文件夹选择对话框 → 自动检测 Git → 设置 codeRepoPath
+        const result = await electronSelectAndSetRepoPath();
+        if (!result) {
+          set({ isInitializing: false });
+          return;
+        }
+
+        if (!result.success) {
+          // Git 仓库未检测到，但可能 codeRepoPath 已设置（如果用户选择的目录本身有 .git）
+          if (!result.codeRepoPath) {
+            set({ isInitializing: false });
+            alert(result.message);
+            return;
+          }
+          // codeRepoPath 已设置但 Git 初始化失败，继续加载工作区文件
+          console.warn("[TaskFlow] Git 不可用但继续加载工作区:", result.message);
+        }
+
+        // 更新 codeRepoPath 和 taskDataPath
+        const newDataPath = await electronGetDataPath();
+        const newRepoPath = await window.electronAPI?.getCodeRepoPath();
+        set({
+          codeRepoPath: newRepoPath || null,
+          taskDataPath: newDataPath,
+        });
+
+        // 重新获取同步状态
+        try {
+          const status = await getSyncStatus();
+          if (status) set({ syncStatus: status });
+        } catch {}
+
+        // 列出 taskData 目录下的工作区文件
+        const filenames = await electronListWorkspaces();
+
+        if (filenames.length === 0) {
+          // taskData 目录为空，显示首页
+          set({
+            isInitializing: false,
+            isOnboarded: false,
+            showHomeScreen: true,
+          });
+          alert(
+            `已设置代码仓库路径：${result.codeRepoPath}\n\n` +
+            `工作区数据目录：${newDataPath}\n\n` +
+            `该目录下暂无工作区文件，请点击"新建工作区"创建。`
+          );
+          return;
+        }
+
+        // 加载所有工作区文件
+        const wsList: Workspace[] = [];
+        for (const filename of filenames) {
+          try {
+            const rawData = await electronReadWorkspace(filename);
+            const data = migrateData(rawData);
+            const wsId = generateId();
+            dataCache.set(wsId, data);
+
+            const writer = new ElectronFileWriter();
+            writer.setFilename(filename);
+            fileWriters.set(wsId, writer);
+
+            wsList.push({
+              id: wsId,
+              name: filename.replace(/\.json$/i, ""),
+              filename,
+              fileHandle: null,
+              loaded: true,
+            });
+          } catch {
+            // 读取文件失败，跳过
+          }
+        }
+
+        if (wsList.length === 0) {
+          set({
+            isInitializing: false,
+            isOnboarded: false,
+            showHomeScreen: true,
+          });
+          alert("工作区文件读取失败，请检查文件格式。");
+          return;
+        }
+
+        // 激活第一个工作区，但显示首页让用户选择
+        const targetWs = wsList[0];
+        set({
+          workspaces: wsList,
+          activeWorkspaceId: targetWs.id,
+          isOnboarded: true,
+          isInitializing: false,
+          showHomeScreen: true, // 显示首页让用户选择工作区
+        });
+        loadWorkspaceData(targetWs.id);
+
+        try {
+          await saveLastActiveWorkspaceName(targetWs.filename || targetWs.name);
+        } catch {}
+      } catch (err: any) {
+        console.error("打开工作区文件夹失败:", err);
+        set({ isInitializing: false });
+        alert(`打开工作区失败: ${err.message || err}`);
+      }
     },
 
     // ===== 任务操作 =====
@@ -1624,6 +1801,22 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       set((s) => ({ searchFilters: { ...s.searchFilters, ...filters } })),
     setContextMenu: (menu) => set({ contextMenu: menu }),
 
+    // ===== 首页导航 =====
+    goToHome: () => {
+      // 刷盘当前工作区数据
+      if (get().activeWorkspaceId) {
+        cacheCurrentData();
+        const writer = fileWriters.get(get().activeWorkspaceId!);
+        if (writer) writer.flush();
+      }
+      set({ showHomeScreen: true, settingsOpen: false });
+    },
+    enterWorkspace: () => {
+      if (get().activeWorkspaceId && get().isOnboarded) {
+        set({ showHomeScreen: false });
+      }
+    },
+
     // ===== 日历视图操作 =====
     setCalendarSubview: (subview) => set({ calendarSubview: subview }),
     setCalendarDate: (date) => set({ calendarDate: date.toISOString() }),
@@ -1714,6 +1907,39 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         if (status) set({ syncStatus: status });
       } catch (err) {
         console.error("设置代码仓库路径失败:", err);
+      }
+    },
+
+    // 重新配置同步目录（打开文件夹选择对话框，自动检测 Git 仓库）
+    reconfigureSyncDir: async () => {
+      if (!get().isElectron) return;
+      try {
+        const result = await electronSelectAndSetRepoPath();
+        if (!result) return;
+
+        if (!result.success && !result.codeRepoPath) {
+          alert(result.message);
+          return;
+        }
+
+        // 更新 codeRepoPath 和 taskDataPath
+        const newDataPath = await electronGetDataPath();
+        const newRepoPath = await window.electronAPI?.getCodeRepoPath();
+        set({ codeRepoPath: newRepoPath || null, taskDataPath: newDataPath });
+
+        // 重新获取同步状态
+        try {
+          const status = await getSyncStatus();
+          if (status) set({ syncStatus: status });
+        } catch {}
+
+        // 如果 Git 不可用，提示用户
+        if (!result.success) {
+          console.warn("[TaskFlow] 代码仓库已设置但 Git 不可用:", result.message);
+        }
+      } catch (err: any) {
+        console.error("重新配置同步目录失败:", err);
+        alert(`配置失败: ${err.message || err}`);
       }
     },
 

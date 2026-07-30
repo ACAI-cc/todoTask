@@ -71,6 +71,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
   /** 获取 Git 诊断信息（路径、可执行文件等） */
   getGitInfo: () => ipcRenderer.invoke("sync:getGitInfo"),
 
+  /** 打开文件夹选择对话框，返回选中的文件夹路径 */
+  selectFolder: () => ipcRenderer.invoke("dialog:selectFolder"),
+
+  /** 从指定目录向上查找 Git 仓库根目录 */
+  autoDetectGitRepo: (startDir) =>
+    ipcRenderer.invoke("sync:autoDetectGitRepo", startDir),
+
+  /** 打开文件夹选择对话框并自动设置代码仓库路径
+   *  allowNoGit: 为 true 时，未找到 Git 仓库仍将 codeRepoPath 设为用户选择的目录 */
+  selectAndSetRepoPath: (allowNoGit) =>
+    ipcRenderer.invoke("sync:selectAndSetRepoPath", allowNoGit),
+
   // ============================================================
   // 事件监听（主进程 → 渲染进程推送）
   // ============================================================

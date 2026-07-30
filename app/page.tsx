@@ -19,6 +19,7 @@ export default function Home() {
   const isOnboarded = useTaskStore((s) => s.isOnboarded);
   const isInitializing = useTaskStore((s) => s.isInitializing);
   const needsRestoreClick = useTaskStore((s) => s.needsRestoreClick);
+  const showHomeScreen = useTaskStore((s) => s.showHomeScreen);
   const view = useTaskStore((s) => s.view);
   const initStore = useTaskStore((s) => s.initStore);
   const restoreWorkspacesWithPermission = useTaskStore(
@@ -128,7 +129,7 @@ export default function Home() {
     );
   }
 
-  if (!isOnboarded) {
+  if (!isOnboarded || showHomeScreen) {
     return (
       <>
         <OnboardingScreen />

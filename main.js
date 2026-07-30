@@ -10,7 +10,7 @@
  * 6. 向渲染进程推送同步状态更新
  */
 
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { execFileSync } = require("child_process");
@@ -609,6 +609,117 @@ function setupIPC() {
       taskDataDir: taskDataDir,
       gitExecutable: gitExecutable,
       configPath: configFilePath,
+    };
+  });
+
+  // ---- 文件夹选择对话框 ----
+
+  // 打开文件夹选择对话框，返回用户选择的文件夹路径
+  ipcMain.handle("dialog:selectFolder", async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ["openDirectory"],
+      title: "选择工作区数据目录",
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return result.filePaths[0];
+  });
+
+  // ---- Git 仓库自动检测 ----
+
+  // 从指定目录开始向上查找 Git 仓库根目录（.git 目录）
+  // 返回 { found: boolean, repoPath: string|null, searchedDirs: string[] }
+  ipcMain.handle("sync:autoDetectGitRepo", async (event, startDir) => {
+    if (!startDir || !fs.existsSync(startDir)) {
+      return { found: false, repoPath: null, searchedDirs: [] };
+    }
+
+    const searchedDirs = [];
+    let currentDir = path.resolve(startDir);
+
+    for (let i = 0; i < 15; i++) {
+      searchedDirs.push(currentDir);
+
+      if (fs.existsSync(path.join(currentDir, ".git"))) {
+        console.log("[TaskFlow] 自动检测到 Git 仓库:", currentDir);
+        return { found: true, repoPath: currentDir, searchedDirs };
+      }
+
+      const parent = path.dirname(currentDir);
+      if (parent === currentDir) break; // 到达磁盘根目录
+      currentDir = parent;
+    }
+
+    console.log("[TaskFlow] 未检测到 Git 仓库，已搜索目录:", searchedDirs);
+    return { found: false, repoPath: null, searchedDirs };
+  });
+
+  // ---- 选择文件夹并自动设置代码仓库路径 ----
+
+  // 打开文件夹选择对话框 → 从所选目录向上查找 .git → 自动设置 codeRepoPath
+  // 参数 allowNoGit: 当 true 时，未找到 Git 仓库仍将 codeRepoPath 设为用户选择的目录（用于新建工作区场景）
+  // 返回 { success: boolean, message: string, codeRepoPath: string|null, taskDataDir: string|null }
+  ipcMain.handle("sync:selectAndSetRepoPath", async (event, allowNoGit) => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ["openDirectory"],
+      title: allowNoGit ? "选择工作区存储目录" : "选择 Git 仓库根目录或 taskData 目录",
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, message: "用户取消了选择", codeRepoPath: null, taskDataDir: null };
+    }
+
+    const selectedPath = result.filePaths[0];
+    console.log("[TaskFlow] 用户选择目录:", selectedPath, "allowNoGit:", !!allowNoGit);
+
+    // 从所选目录向上查找 Git 仓库
+    let gitRepoPath = null;
+    let currentDir = path.resolve(selectedPath);
+
+    for (let i = 0; i < 15; i++) {
+      if (fs.existsSync(path.join(currentDir, ".git"))) {
+        gitRepoPath = currentDir;
+        break;
+      }
+      const parent = path.dirname(currentDir);
+      if (parent === currentDir) break;
+      currentDir = parent;
+    }
+
+    if (!gitRepoPath) {
+      if (allowNoGit) {
+        // 新建工作区场景：未找到 Git 仓库仍将 codeRepoPath 设为用户选择的目录
+        console.log("[TaskFlow] 未检测到 Git 仓库，使用用户选择目录作为 codeRepoPath:", selectedPath);
+        gitRepoPath = path.resolve(selectedPath);
+      } else {
+        return {
+          success: false,
+          message: `未检测到 Git 仓库，已从 "${selectedPath}" 向上搜索未找到 .git 目录。请在该目录的上级初始化 Git 仓库或手动指定同步目录。`,
+          codeRepoPath: null,
+          taskDataDir: null,
+        };
+      }
+    }
+
+    // 保存配置并应用
+    const config = loadConfig();
+    config.codeRepoPath = gitRepoPath;
+    saveConfig(config);
+
+    applyCodeRepoPath(gitRepoPath);
+    startFileWatcher();
+    await initGit();
+    sendSyncStatus();
+
+    console.log("[TaskFlow] 自动设置代码仓库路径:", gitRepoPath);
+    console.log("[TaskFlow] taskData 目录:", taskDataDir);
+
+    return {
+      success: syncState.gitAvailable,
+      message: syncState.message || `已设置代码仓库路径: ${gitRepoPath}`,
+      codeRepoPath: gitRepoPath,
+      taskDataDir: taskDataDir,
     };
   });
 }

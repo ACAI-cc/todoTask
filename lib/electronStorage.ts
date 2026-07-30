@@ -12,7 +12,7 @@
  */
 
 import { PersistedData } from "@/types";
-import type { SyncStatus } from "@/types/electron";
+import type { SyncStatus, AutoDetectResult, SelectAndSetResult } from "@/types/electron";
 import { SAVE_DEBOUNCE_MS } from "./constants";
 
 // ============================================================
@@ -172,4 +172,29 @@ export async function getSyncStatus(): Promise<SyncStatus | null> {
 export async function getGitAvailable(): Promise<boolean> {
   if (!window.electronAPI) return false;
   return window.electronAPI.getGitAvailable();
+}
+
+// ============================================================
+// 文件夹选择与 Git 仓库自动检测
+// ============================================================
+
+/** 打开文件夹选择对话框，返回选中的文件夹路径 */
+export async function electronSelectFolder(): Promise<string | null> {
+  if (!window.electronAPI) return null;
+  return window.electronAPI.selectFolder();
+}
+
+/** 从指定目录向上查找 Git 仓库根目录 */
+export async function electronAutoDetectGitRepo(
+  startDir: string
+): Promise<AutoDetectResult | null> {
+  if (!window.electronAPI) return null;
+  return window.electronAPI.autoDetectGitRepo(startDir);
+}
+
+/** 打开文件夹选择对话框并自动设置代码仓库路径
+ *  allowNoGit: 为 true 时，未找到 Git 仓库仍将 codeRepoPath 设为用户选择的目录 */
+export async function electronSelectAndSetRepoPath(allowNoGit?: boolean): Promise<SelectAndSetResult | null> {
+  if (!window.electronAPI) return null;
+  return window.electronAPI.selectAndSetRepoPath(allowNoGit);
 }

@@ -28,6 +28,8 @@ export default function SettingsPanel() {
   const syncStatus = useTaskStore((s) => s.syncStatus);
   const triggerManualSync = useTaskStore((s) => s.triggerManualSync);
   const setAutoPush = useTaskStore((s) => s.setAutoPush);
+  const goToHome = useTaskStore((s) => s.goToHome);
+  const reconfigureSyncDir = useTaskStore((s) => s.reconfigureSyncDir);
 
   const [newModuleName, setNewModuleName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -515,6 +517,19 @@ export default function SettingsPanel() {
                   立即同步
                 </button>
               )}
+
+              {/* 重新配置同步目录按钮 */}
+              <button
+                onClick={() => reconfigureSyncDir()}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                重新配置同步目录
+              </button>
             </section>
           )}
 
@@ -559,6 +574,20 @@ export default function SettingsPanel() {
               </div>
             </div>
           </section>
+
+          {/* 回到首页按钮 */}
+          <div className="pt-2 border-t border-gray-100">
+            <button
+              onClick={() => goToHome()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <path d="M9 22V12h6v10" />
+              </svg>
+              回到首页
+            </button>
+          </div>
         </div>
       </div>
     </>

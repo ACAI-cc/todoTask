@@ -35,6 +35,21 @@ export interface GitInfo {
   configPath: string;
 }
 
+/** Git 仓库自动检测结果 */
+export interface AutoDetectResult {
+  found: boolean;
+  repoPath: string | null;
+  searchedDirs: string[];
+}
+
+/** 选择并设置代码仓库路径的结果 */
+export interface SelectAndSetResult {
+  success: boolean;
+  message: string;
+  codeRepoPath: string | null;
+  taskDataDir: string | null;
+}
+
 /** Electron 主进程暴露给渲染进程的 API 接口 */
 export interface ElectronAPI {
   // 文件操作
@@ -57,6 +72,11 @@ export interface ElectronAPI {
   setAutoPush: (enabled: boolean) => Promise<void>;
   getGitAvailable: () => Promise<boolean>;
   getGitInfo: () => Promise<GitInfo>;
+
+  // 文件夹选择与 Git 仓库自动检测
+  selectFolder: () => Promise<string | null>;
+  autoDetectGitRepo: (startDir: string) => Promise<AutoDetectResult>;
+  selectAndSetRepoPath: (allowNoGit?: boolean) => Promise<SelectAndSetResult>;
 
   // 事件监听
   onSyncStatusUpdate: (callback: (status: SyncStatus) => void) => () => void;
