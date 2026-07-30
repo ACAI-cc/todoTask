@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   /** 列出 taskData/ 目录下所有 .json 文件名 */
   listWorkspaces: () => ipcRenderer.invoke("task:listWorkspaces"),
 
+  /** 获取 taskData 目录的绝对路径 */
+  getDataPath: () => ipcRenderer.invoke("task:getDataPath"),
+
   /** 读取指定工作区文件的 JSON 内容 */
   readWorkspace: (filename) =>
     ipcRenderer.invoke("task:readWorkspace", filename),
@@ -57,6 +60,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   /** 获取 Git 是否可用 */
   getGitAvailable: () => ipcRenderer.invoke("sync:getGitAvailable"),
+
+  /** 设置代码仓库路径和 git 可执行文件路径 */
+  setCodeRepoPath: (repoPath, gitPath) =>
+    ipcRenderer.invoke("sync:setCodeRepoPath", repoPath, gitPath),
+
+  /** 获取已配置的代码仓库路径 */
+  getCodeRepoPath: () => ipcRenderer.invoke("sync:getCodeRepoPath"),
+
+  /** 获取 Git 诊断信息（路径、可执行文件等） */
+  getGitInfo: () => ipcRenderer.invoke("sync:getGitInfo"),
 
   // ============================================================
   // 事件监听（主进程 → 渲染进程推送）

@@ -28,6 +28,7 @@ next-env.d.ts
 # ================================
 /.cache/
 /.appdata/
+/.electron-cache/
 
 # ================================
 # TypeScript

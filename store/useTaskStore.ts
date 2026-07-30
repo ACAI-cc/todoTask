@@ -42,6 +42,7 @@ import {
 import {
   ElectronFileWriter,
   electronListWorkspaces,
+  electronGetDataPath,
   electronReadWorkspace,
   electronCreateWorkspace,
   electronRenameWorkspace,
@@ -72,6 +73,8 @@ interface TaskStore {
 
   // ===== Git 同步状态（仅 Electron 模式）=====
   syncStatus: SyncStatus | null;
+  taskDataPath: string | null; // taskData 目录的绝对路径（仅 Electron 模式）
+  codeRepoPath: string | null; // 用户配置的代码仓库目录（仅 Electron 模式）
 
   // ===== 当前工作区数据（始终反映 activeWorkspaceId）=====
   tasks: Task[];
@@ -102,6 +105,7 @@ interface TaskStore {
   restoreWorkspacesWithPermission: () => Promise<void>;
   createWorkspace: () => Promise<void>;
   openWorkspace: () => Promise<void>;
+  openSpecificWorkspace: (filename: string) => Promise<void>;
   closeWorkspace: (workspaceId: string) => Promise<void>;
   switchWorkspace: (workspaceId: string) => Promise<void>;
   renameWorkspace: (workspaceId: string) => Promise<void>;
@@ -150,6 +154,25 @@ interface TaskStore {
   // ===== Git 同步操作（仅 Electron 模式）=====
   triggerManualSync: () => Promise<void>;
   setAutoPush: (enabled: boolean) => Promise<void>;
+  setCodeRepoPath: (repoPath: string, gitPath: string) => Promise<void>;
+
+  // ===== 自定义 Prompt 对话框（替代 window.prompt，Electron 不支持）=====
+  promptDialog: {
+    title: string;
+    label?: string;
+    defaultValue?: string;
+    placeholder?: string;
+    confirmText?: string;
+    resolve: ((value: string | null) => void) | null;
+  } | null;
+  showPromptDialog: (options: {
+    title: string;
+    label?: string;
+    defaultValue?: string;
+    placeholder?: string;
+    confirmText?: string;
+  }) => Promise<string | null>;
+  closePromptDialog: (value: string | null) => void;
 
   // ===== 内部方法 =====
   _triggerSave: () => void;
@@ -289,6 +312,8 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     activeWorkspaceId: null,
     isElectron: isElectron(),
     syncStatus: null,
+    taskDataPath: null,
+    codeRepoPath: null,
     tasks: [],
     modules: getDefaultModules(),
     moveRecords: [],
@@ -321,8 +346,17 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         set({ isElectron: true, fileSupported: false });
 
         try {
+          // 获取 taskData 目录路径（供 UI 显示）
+          const dataPath = await electronGetDataPath();
+          set({ taskDataPath: dataPath });
+
+          // 获取已配置的代码仓库路径
+          const repoPath = await window.electronAPI?.getCodeRepoPath();
+          set({ codeRepoPath: repoPath || null });
+
           // 列出 taskData/ 目录下所有 .json 文件
           const filenames = await electronListWorkspaces();
+          console.log("[TaskFlow] initStore - taskData 文件列表:", filenames, "路径:", dataPath);
 
           if (filenames.length === 0) {
             // 没有工作区文件，显示引导界面
@@ -348,7 +382,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
               wsList.push({
                 id: wsId,
-                name: filename,
+                name: filename.replace(/\.json$/i, ""),
                 filename,
                 fileHandle: null,
                 loaded: true,
@@ -371,7 +405,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           } catch {}
 
           const targetWs =
-            wsList.find((w) => w.name === lastActiveName) || wsList[0];
+            wsList.find((w) => w.filename === lastActiveName) || wsList[0];
 
           set({
             workspaces: wsList,
@@ -382,7 +416,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           loadWorkspaceData(targetWs.id);
 
           try {
-            await saveLastActiveWorkspaceName(targetWs.name);
+            await saveLastActiveWorkspaceName(targetWs.filename || targetWs.name);
           } catch {}
 
           // 设置同步状态监听并获取初始状态
@@ -659,7 +693,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     createWorkspace: async () => {
       // ===== Electron 模式：通过 IPC 在 taskData/ 目录创建文件 =====
       if (get().isElectron) {
-        const input = window.prompt("请输入工作区名称（不含 .json 后缀）:");
+        const input = await get().showPromptDialog({
+          title: "新建工作区",
+          label: "请输入工作区名称（不含 .json 后缀）:",
+          placeholder: "例如：MyTasks",
+          confirmText: "创建",
+        });
         if (!input || !input.trim()) return;
 
         let name = input.trim();
@@ -668,7 +707,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         try {
           await electronCreateWorkspace(name);
         } catch (err: any) {
-          alert(`创建工作区失败: ${err.message || err}`);
+          console.error("创建工作区失败:", err);
           return;
         }
 
@@ -694,7 +733,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
         const newWorkspace: Workspace = {
           id: wsId,
-          name,
+          name: name.replace(/\.json$/i, ""),
           filename: name,
           fileHandle: null,
           loaded: true,
@@ -772,6 +811,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       // ===== Electron 模式：刷新文件列表，加载新文件 =====
       if (get().isElectron) {
         try {
+          // 确保有 taskDataPath（用户可能从引导界面直接点刷新）
+          if (!get().taskDataPath) {
+            const dataPath = await electronGetDataPath();
+            set({ taskDataPath: dataPath });
+          }
+
           const filenames = await electronListWorkspaces();
           const existingNames = new Set(
             get().workspaces.map((w) => w.filename)
@@ -779,7 +824,20 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           const newFiles = filenames.filter((f) => !existingNames.has(f));
 
           if (newFiles.length === 0) {
-            alert("taskData/ 目录中没有新的工作区文件可打开");
+            const dataPath = get().taskDataPath || "taskData/";
+            if (filenames.length === 0) {
+              alert(
+                `taskData 目录中没有工作区文件。\n\n` +
+                `查找路径: ${dataPath}\n\n` +
+                `请将 .json 工作区文件放入该目录，或点击"新建工作区"创建。`
+              );
+            } else {
+              alert(
+                `taskData 目录中的所有工作区文件已加载。\n\n` +
+                `查找路径: ${dataPath}\n` +
+                `已有文件: ${filenames.join(", ")}`
+              );
+            }
             return;
           }
 
@@ -904,6 +962,57 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       }
     },
 
+    // 打开指定文件名的工作区（从首页列表点击直接打开）
+    openSpecificWorkspace: async (filename) => {
+      if (!get().isElectron) return;
+
+      // 检查是否已在工作区列表中（按 filename 匹配）
+      const existing = get().workspaces.find((w) => w.filename === filename);
+      if (existing) {
+        // 已在列表中，直接切换
+        get().switchWorkspace(existing.id);
+        return;
+      }
+
+      try {
+        // 缓存当前工作区
+        if (get().activeWorkspaceId) {
+          cacheCurrentData();
+        }
+
+        // 读取指定文件
+        const rawData = await electronReadWorkspace(filename);
+        const data = migrateData(rawData);
+        const wsId = generateId();
+        dataCache.set(wsId, data);
+
+        const writer = new ElectronFileWriter();
+        writer.setFilename(filename);
+        fileWriters.set(wsId, writer);
+
+        const newWorkspace: Workspace = {
+          id: wsId,
+          name: filename.replace(/\.json$/i, ""),
+          filename,
+          fileHandle: null,
+          loaded: true,
+        };
+
+        set({
+          workspaces: [...get().workspaces, newWorkspace],
+          activeWorkspaceId: wsId,
+          isOnboarded: true,
+        });
+        loadWorkspaceData(wsId);
+
+        try {
+          await saveLastActiveWorkspaceName(filename);
+        } catch {}
+      } catch (err: any) {
+        alert(`打开工作区失败: ${err.message || err}`);
+      }
+    },
+
     closeWorkspace: async (workspaceId) => {
       const state = get();
       const ws = state.workspaces.find((w) => w.id === workspaceId);
@@ -948,7 +1057,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
               (cachedData && cachedData.modules[0]?.id) || "not-started",
           });
           try {
-            await saveLastActiveWorkspaceName(newActive.name);
+            await saveLastActiveWorkspaceName(newActive.filename || newActive.name);
           } catch {
             // 忽略
           }
@@ -1032,7 +1141,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
       // 保存最后活跃工作区名（用于刷新恢复）
       try {
-        await saveLastActiveWorkspaceName(targetWs.name);
+        await saveLastActiveWorkspaceName(targetWs.filename || targetWs.name);
       } catch {
         // 忽略
       }
@@ -1045,7 +1154,13 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         const ws = state.workspaces.find((w) => w.id === workspaceId);
         if (!ws || !ws.filename) return;
 
-        const input = window.prompt("请输入新的工作区名称:", ws.filename);
+        const input = await get().showPromptDialog({
+          title: "重命名工作区",
+          label: "请输入新的工作区名称（不含 .json 后缀）:",
+          defaultValue: ws.name,
+          placeholder: ws.name,
+          confirmText: "重命名",
+        });
         if (!input || !input.trim()) return;
 
         let newName = input.trim();
@@ -1056,7 +1171,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         try {
           await electronRenameWorkspace(ws.filename, newName);
         } catch (err: any) {
-          alert(`重命名失败: ${err.message || err}`);
+          console.error("重命名失败:", err);
           return;
         }
 
@@ -1070,7 +1185,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         const wasActive = state.activeWorkspaceId === workspaceId;
         const newWorkspaces = state.workspaces.map((w) =>
           w.id === workspaceId
-            ? { ...w, name: newName, filename: newName }
+            ? { ...w, name: newName.replace(/\.json$/i, ""), filename: newName }
             : w
         );
 
@@ -1583,6 +1698,49 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       } catch (err) {
         console.error("设置自动推送失败:", err);
       }
+    },
+
+    // 设置代码仓库路径（用户手动配置）
+    setCodeRepoPath: async (repoPath, gitPath) => {
+      if (!get().isElectron) return;
+      try {
+        await window.electronAPI?.setCodeRepoPath(repoPath, gitPath);
+        // 更新 codeRepoPath 和 taskDataPath
+        const newRepoPath = await window.electronAPI?.getCodeRepoPath();
+        const newDataPath = await electronGetDataPath();
+        set({ codeRepoPath: newRepoPath || null, taskDataPath: newDataPath });
+        // 重新获取同步状态
+        const status = await getSyncStatus();
+        if (status) set({ syncStatus: status });
+      } catch (err) {
+        console.error("设置代码仓库路径失败:", err);
+      }
+    },
+
+    // ===== 自定义 Prompt 对话框 =====
+    promptDialog: null,
+
+    showPromptDialog: (options) => {
+      return new Promise<string | null>((resolve) => {
+        set({
+          promptDialog: {
+            title: options.title,
+            label: options.label,
+            defaultValue: options.defaultValue,
+            placeholder: options.placeholder,
+            confirmText: options.confirmText,
+            resolve,
+          },
+        });
+      });
+    },
+
+    closePromptDialog: (value) => {
+      const dialog = get().promptDialog;
+      if (dialog && dialog.resolve) {
+        dialog.resolve(value);
+      }
+      set({ promptDialog: null });
     },
 
     // ===== 内部方法 =====

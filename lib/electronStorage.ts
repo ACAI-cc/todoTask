@@ -95,6 +95,12 @@ export async function electronListWorkspaces(): Promise<string[]> {
   return window.electronAPI.listWorkspaces();
 }
 
+/** 获取 taskData 目录的绝对路径 */
+export async function electronGetDataPath(): Promise<string | null> {
+  if (!window.electronAPI) return null;
+  return window.electronAPI.getDataPath();
+}
+
 /** 读取指定工作区文件的 JSON 内容 */
 export async function electronReadWorkspace(
   filename: string

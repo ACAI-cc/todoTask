@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTaskStore } from "@/store/useTaskStore";
-import type { SyncStatus } from "@/types/electron";
+import type { SyncStatus, GitInfo } from "@/types/electron";
 
 /**
  * SyncStatusBar - Git 同步状态栏
@@ -22,8 +22,13 @@ export default function SyncStatusBar() {
   const syncStatus = useTaskStore((s) => s.syncStatus);
   const triggerManualSync = useTaskStore((s) => s.triggerManualSync);
   const setAutoPush = useTaskStore((s) => s.setAutoPush);
+  const setCodeRepoPath = useTaskStore((s) => s.setCodeRepoPath);
 
   const [expanded, setExpanded] = useState(false);
+  const [gitInfo, setGitInfo] = useState<GitInfo | null>(null);
+  const [repoPath, setRepoPath] = useState("");
+  const [gitPath, setGitPath] = useState("");
+  const [saving, setSaving] = useState(false);
 
   if (!isElectron) return null;
 
@@ -32,6 +37,35 @@ export default function SyncStatusBar() {
   const state = status?.state ?? "idle";
   const message = status?.message;
   const autoPushEnabled = status?.autoPushEnabled ?? true;
+
+  // 展开 Git 配置面板时获取诊断信息
+  const handleExpand = async () => {
+    const newExpanded = !expanded;
+    setExpanded(newExpanded);
+    if (newExpanded && !gitAvailable) {
+      try {
+        const info = await window.electronAPI!.getGitInfo();
+        setGitInfo(info);
+        if (!repoPath) setRepoPath(info.codeRepoPath || "");
+        if (!gitPath) setGitPath(info.gitExecutable && info.gitExecutable !== "git" ? info.gitExecutable : "");
+      } catch {
+        // 忽略
+      }
+    }
+  };
+
+  // 保存 Git 仓库路径配置
+  const handleSaveGitConfig = async () => {
+    setSaving(true);
+    try {
+      await setCodeRepoPath(repoPath.trim(), gitPath.trim());
+      // 重新获取诊断信息
+      const info = await window.electronAPI!.getGitInfo();
+      setGitInfo(info);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // 格式化上次同步时间
   const formatLastSync = (timestamp: number | null): string => {
@@ -117,7 +151,7 @@ export default function SyncStatusBar() {
       {/* 状态栏主体 */}
       <div
         className={`shrink-0 ${display.bgColor} border-t border-gray-200 px-4 py-1.5 flex items-center justify-between cursor-pointer transition-colors hover:brightness-95`}
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleExpand}
       >
         <div className={`flex items-center gap-2 text-xs ${display.color}`}>
           {/* 同步中时添加旋转动画 */}
@@ -158,15 +192,72 @@ export default function SyncStatusBar() {
       {/* 展开详情面板 */}
       {expanded && (
         <div className="shrink-0 bg-white border-t border-gray-100 px-4 py-3 space-y-3 shadow-sm">
-          {/* Git 状态信息 */}
+          {/* Git 配置面板（Git 不可用时显示） */}
           {!gitAvailable && (
-            <div className="flex items-start gap-2 text-sm text-gray-600">
-              <span className="shrink-0">⚠️</span>
-              <div>
-                <p className="font-medium text-gray-700">Git 仓库不可用</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {message || "未检测到 Git 仓库，自动推送功能不可用。请在项目根目录初始化 Git 仓库并配置远程地址。"}
-                </p>
+            <div className="space-y-3">
+              {/* 错误提示 */}
+              <div className="flex items-start gap-2 text-sm text-gray-600">
+                <span className="shrink-0">⚠️</span>
+                <div>
+                  <p className="font-medium text-gray-700">Git 仓库不可用</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {message || "请配置 Git 仓库路径以启用自动同步"}
+                  </p>
+                </div>
+              </div>
+
+              {/* 诊断信息 */}
+              {gitInfo && (
+                <div className="text-xs text-gray-400 bg-gray-50 rounded-md p-2 space-y-0.5 font-mono">
+                  <p>安装目录: {gitInfo.installDir}</p>
+                  <p>taskData: {gitInfo.taskDataDir}</p>
+                  <p>git 命令: {gitInfo.gitExecutable || "未检测到"}</p>
+                  <p>代码仓库: {gitInfo.codeRepoPath || "未设置"}</p>
+                </div>
+              )}
+
+              {/* 配置输入 */}
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">
+                    代码仓库根目录路径
+                  </label>
+                  <input
+                    type="text"
+                    value={repoPath}
+                    onChange={(e) => setRepoPath(e.target.value)}
+                    placeholder="例如: D:\WorkBuddy\workspace\todo"
+                    className="w-full mt-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:border-blue-400 bg-white text-gray-700"
+                  />
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    包含 .git 目录的项目根目录的绝对路径
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">
+                    git.exe 路径（可选）
+                  </label>
+                  <input
+                    type="text"
+                    value={gitPath}
+                    onChange={(e) => setGitPath(e.target.value)}
+                    placeholder="留空则自动检测系统 git"
+                    className="w-full mt-1 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:border-blue-400 bg-white text-gray-700"
+                  />
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    如果系统 PATH 中没有 git，请指定完整路径
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSaveGitConfig();
+                  }}
+                  disabled={saving || !repoPath.trim()}
+                  className="w-full px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? "保存中..." : "保存并检测"}
+                </button>
               </div>
             </div>
           )}

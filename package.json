@@ -1,6 +1,8 @@
 {
   "name": "taskflow",
   "version": "1.0.0",
+  "description": "TaskFlow - 模块化个人任务管理桌面应用，支持 Git 自动同步",
+  "author": "TaskFlow",
   "private": true,
   "main": "main.js",
   "scripts": {
@@ -9,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "dev:electron": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "build:electron": "cross-env BUILD_TARGET=electron next build && electron-builder",
+    "build:electron": "cross-env BUILD_TARGET=electron CSC_IDENTITY_AUTO_DISCOVERY=false next build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --config.win.signAndEditExecutable=false",
     "electron": "electron ."
   },
   "dependencies": {
@@ -29,7 +31,7 @@
     "autoprefixer": "^10.4.19",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
-    "electron": "^31.0.0",
+    "electron": "31.7.7",
     "electron-builder": "^24.13.3",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",

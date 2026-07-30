@@ -23,6 +23,7 @@ export default function SettingsPanel() {
   const openWorkspace = useTaskStore((s) => s.openWorkspace);
   const closeWorkspace = useTaskStore((s) => s.closeWorkspace);
   const renameWorkspace = useTaskStore((s) => s.renameWorkspace);
+  const switchWorkspace = useTaskStore((s) => s.switchWorkspace);
   const isElectron = useTaskStore((s) => s.isElectron);
   const syncStatus = useTaskStore((s) => s.syncStatus);
   const triggerManualSync = useTaskStore((s) => s.triggerManualSync);
@@ -92,10 +93,15 @@ export default function SettingsPanel() {
               {workspaces.map((ws) => (
                 <div
                   key={ws.id}
+                  onClick={() => {
+                    if (ws.id !== activeWorkspaceId) {
+                      switchWorkspace(ws.id);
+                    }
+                  }}
                   className={`flex items-center gap-2 p-2.5 rounded-lg border transition-colors ${
                     ws.id === activeWorkspaceId
                       ? "bg-blue-50 border-blue-200"
-                      : "bg-gray-50 border-gray-100"
+                      : "bg-gray-50 border-gray-100 cursor-pointer hover:bg-gray-100"
                   }`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-gray-500">
@@ -105,14 +111,17 @@ export default function SettingsPanel() {
                   <span className={`flex-1 text-sm truncate ${
                     ws.id === activeWorkspaceId ? "text-blue-700 font-medium" : "text-gray-700"
                   }`}>
-                    {isElectron ? `taskData/${ws.name}` : ws.name}
+                    {isElectron ? (ws.filename || ws.name).replace(/\.json$/i, "") : ws.name}
                   </span>
                   {ws.id === activeWorkspaceId && (
                     <span className="text-xs text-blue-500 shrink-0">当前</span>
                   )}
                   {/* 重命名（另存为）按钮 */}
                   <button
-                    onClick={() => renameWorkspace(ws.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      renameWorkspace(ws.id);
+                    }}
                     className="shrink-0 p-1 text-gray-400 hover:text-gray-600"
                     title="另存为..."
                   >
@@ -123,7 +132,10 @@ export default function SettingsPanel() {
                   </button>
                   {/* 关闭按钮 */}
                   <button
-                    onClick={() => closeWorkspace(ws.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeWorkspace(ws.id);
+                    }}
                     className="shrink-0 p-1 text-gray-400 hover:text-red-500"
                     title="关闭工作区（文件保留在磁盘上）"
                   >

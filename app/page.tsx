@@ -13,6 +13,7 @@ import ContextMenu from "@/components/ContextMenu";
 import DeleteToastContainer from "@/components/DeleteToastContainer";
 import UnsupportedWarning from "@/components/UnsupportedWarning";
 import SyncStatusBar from "@/components/SyncStatusBar";
+import PromptDialog from "@/components/PromptDialog";
 
 export default function Home() {
   const isOnboarded = useTaskStore((s) => s.isOnboarded);
@@ -87,45 +88,53 @@ export default function Home() {
   // 需要用户点击授权恢复
   if (needsRestoreClick) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto px-8">
-          <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white text-2xl font-bold mb-4">
-              T
+      <>
+        <div className="h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-md mx-auto px-8">
+            <div className="mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-900 text-white text-2xl font-bold mb-4">
+                T
+              </div>
+              <h1 className="text-xl font-bold text-gray-900 mb-2">
+                恢复工作区
+              </h1>
+              <p className="text-gray-500 text-sm">
+                检测到之前打开的工作区，点击下方按钮授权恢复。
+              </p>
             </div>
-            <h1 className="text-xl font-bold text-gray-900 mb-2">
-              恢复工作区
-            </h1>
-            <p className="text-gray-500 text-sm">
-              检测到之前打开的工作区，点击下方按钮授权恢复。
-            </p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-3">
-            <button
-              onClick={restoreWorkspacesWithPermission}
-              className="w-full px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-            >
-              恢复工作区
-            </button>
-            <button
-              onClick={() => {
-                useTaskStore.setState({
-                  needsRestoreClick: false,
-                  isOnboarded: false,
-                });
-              }}
-              className="w-full px-4 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-            >
-              新建或打开其他文件
-            </button>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-3">
+              <button
+                onClick={restoreWorkspacesWithPermission}
+                className="w-full px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                恢复工作区
+              </button>
+              <button
+                onClick={() => {
+                  useTaskStore.setState({
+                    needsRestoreClick: false,
+                    isOnboarded: false,
+                  });
+                }}
+                className="w-full px-4 py-2.5 bg-white text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                新建或打开其他文件
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+        <PromptDialog />
+      </>
     );
   }
 
   if (!isOnboarded) {
-    return <OnboardingScreen />;
+    return (
+      <>
+        <OnboardingScreen />
+        <PromptDialog />
+      </>
+    );
   }
 
   return (
@@ -150,6 +159,7 @@ export default function Home() {
       <SearchOverlay />
       <ContextMenu />
       <DeleteToastContainer />
+      <PromptDialog />
     </div>
   );
 }
