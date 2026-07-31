@@ -704,6 +704,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1785461292441-gycwrgkah"
+    },
+    {
+      "id": "1785461450814-9lbx7vqn5",
+      "title": "巡检结果图展示略缩图",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1785461450814,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1785461450814-9lbx7vqn5"
     }
   ],
   "modules": [
