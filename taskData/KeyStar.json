@@ -604,9 +604,9 @@
       "id": "1785307536337-t2km5l6s9",
       "title": "综合查询增加筛选字段",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1785307536337,
-      "completedAt": null,
+      "completedAt": 1785482370161,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -764,6 +764,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1785467998582-wquwp13ca"
+    },
+    {
+      "id": "1785482386068-1oc9lk015",
+      "title": "自测综合查询增加筛选字段",
+      "moduleId": "paused",
+      "completed": false,
+      "createdAt": 1785482386068,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1785482386068-1oc9lk015"
     }
   ],
   "modules": [
