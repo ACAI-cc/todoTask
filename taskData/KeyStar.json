@@ -809,6 +809,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1785722448893-53ztko0nw"
+    },
+    {
+      "id": "1785736472993-fhcli61ht",
+      "title": "巡检任务日志打印修改补充",
+      "moduleId": "1784702431305-5wime6wsc",
+      "completed": false,
+      "createdAt": 1785736472993,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1785736472993-fhcli61ht"
     }
   ],
   "modules": [
