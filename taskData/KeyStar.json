@@ -899,6 +899,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1785742926056-idi334pfu"
+    },
+    {
+      "id": "1785812554564-wl1sjlazi",
+      "title": "修改国网协议机器人计算巡检点状态的方式",
+      "moduleId": "1784702431305-5wime6wsc",
+      "completed": true,
+      "createdAt": 1785812554564,
+      "completedAt": 1785812558647,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1785812554564-wl1sjlazi"
     }
   ],
   "modules": [
