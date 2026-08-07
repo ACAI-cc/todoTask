@@ -929,6 +929,36 @@
       "movedAt": null,
       "contact": null,
       "originId": "1785920746777-ul07x34w4"
+    },
+    {
+      "id": "1786091985485-75b573i7y",
+      "title": "排查处理人工巡检问题",
+      "moduleId": "1784702431305-5wime6wsc",
+      "completed": true,
+      "createdAt": 1786091985485,
+      "completedAt": 1786092017048,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1786091985485-75b573i7y"
+    },
+    {
+      "id": "1786092014152-hk2nflamm",
+      "title": "自测机器人、国网协议机器人和人工巡检数据点统计",
+      "moduleId": "1784702431305-5wime6wsc",
+      "completed": true,
+      "createdAt": 1786092014152,
+      "completedAt": 1786092018179,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1786092014152-hk2nflamm"
     }
   ],
   "modules": [
