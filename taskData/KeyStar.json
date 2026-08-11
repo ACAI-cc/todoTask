@@ -1049,6 +1049,36 @@
       "movedAt": null,
       "contact": null,
       "originId": "1786419687827-qayruqbzw"
+    },
+    {
+      "id": "1786430206884-rapzvjgss",
+      "title": "优化巡检调用抓拍接口重试三次",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1786430206884,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1786430206884-rapzvjgss"
+    },
+    {
+      "id": "1786430219300-160bhsdn5",
+      "title": "优化接口/listDrawResult的sql效率",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1786430219300,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": "朱嘉晔",
+      "originId": "1786430219300-160bhsdn5"
     }
   ],
   "modules": [
