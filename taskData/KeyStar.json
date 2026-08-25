@@ -1054,9 +1054,9 @@
       "id": "1786430206884-rapzvjgss",
       "title": "优化巡检调用抓拍接口重试三次",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1786430206884,
-      "completedAt": null,
+      "completedAt": 1787636706944,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1094,6 +1094,36 @@
       "movedAt": null,
       "contact": null,
       "originId": "1786435512953-s1ltdomke"
+    },
+    {
+      "id": "1787636724347-d5o18oq70",
+      "title": "巡检点列表",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1787636724347,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": "陈光再、魏钰尧",
+      "originId": "1787636724347-d5o18oq70"
+    },
+    {
+      "id": "1787636758347-8c1tgyg2m",
+      "title": "优化电站总览统计维度为巡检点",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1787636758347,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": "魏钰尧",
+      "originId": "1787636758347-8c1tgyg2m"
     }
   ],
   "modules": [
