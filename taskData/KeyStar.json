@@ -1124,6 +1124,21 @@
       "movedAt": null,
       "contact": "魏钰尧",
       "originId": "1787636758347-8c1tgyg2m"
+    },
+    {
+      "id": "1787715032757-3llplkf5x",
+      "title": "巡检点导入增加范围和类型字段",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1787715032757,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787715032757-3llplkf5x"
     }
   ],
   "modules": [
