@@ -1099,9 +1099,9 @@
       "id": "1787636724347-d5o18oq70",
       "title": "巡检点列表",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1787636724347,
-      "completedAt": null,
+      "completedAt": 1787735273361,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1214,6 +1214,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787727258402-01exzqw4z"
+    },
+    {
+      "id": "1787735280425-i2m7ldkmp",
+      "title": "联调巡检点列表",
+      "moduleId": "paused",
+      "completed": false,
+      "createdAt": 1787735280425,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787735280425-i2m7ldkmp"
     }
   ],
   "modules": [
