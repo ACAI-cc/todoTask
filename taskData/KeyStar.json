@@ -1172,11 +1172,11 @@
     },
     {
       "id": "1787723223614-s6wdolthc",
-      "title": "站点同步",
+      "title": "站点同步开发",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1787723223614,
-      "completedAt": null,
+      "completedAt": 1787809397036,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1259,6 +1259,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787797390492-29ufnfybr"
+    },
+    {
+      "id": "1787809411911-zs9a629yz",
+      "title": "站点同步逻辑对接与联调",
+      "moduleId": "paused",
+      "completed": false,
+      "createdAt": 1787809411911,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": "朱嘉晔",
+      "originId": "1787809411911-zs9a629yz"
     }
   ],
   "modules": [
