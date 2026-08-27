@@ -1229,6 +1229,36 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787735280425-i2m7ldkmp"
+    },
+    {
+      "id": "1787797378686-ihcpd92nz",
+      "title": "巡检点列表",
+      "moduleId": "unsorted",
+      "completed": false,
+      "createdAt": 1787797378686,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787797378686-ihcpd92nz"
+    },
+    {
+      "id": "1787797390492-29ufnfybr",
+      "title": "电站总览巡检点统计",
+      "moduleId": "unsorted",
+      "completed": false,
+      "createdAt": 1787797390492,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787797390492-29ufnfybr"
     }
   ],
   "modules": [
