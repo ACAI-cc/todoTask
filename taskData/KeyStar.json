@@ -1304,6 +1304,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787903057386-5md69055l"
+    },
+    {
+      "id": "1787909128309-5nxlxdsfk",
+      "title": "部署巡检动作列表",
+      "moduleId": "paused",
+      "completed": false,
+      "createdAt": 1787909128309,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787909128309-5nxlxdsfk"
     }
   ],
   "modules": [
