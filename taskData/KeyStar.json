@@ -1289,6 +1289,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787900021803-5hi6j17sj"
+    },
+    {
+      "id": "1787903057386-5md69055l",
+      "title": "日报导出计划总数增加无人机的数量",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1787903057386,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787903057386-5md69055l"
     }
   ],
   "modules": [
