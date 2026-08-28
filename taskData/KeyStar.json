@@ -1274,6 +1274,21 @@
       "movedAt": null,
       "contact": "朱嘉晔",
       "originId": "1787809411911-zs9a629yz"
+    },
+    {
+      "id": "1787900021803-5hi6j17sj",
+      "title": "摄像头红外上报报警",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1787900021803,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1787900021803-5hi6j17sj"
     }
   ],
   "modules": [
