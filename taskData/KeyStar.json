@@ -1394,6 +1394,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1789032479369-13fhdw14b"
+    },
+    {
+      "id": "1789605559536-zylyek713",
+      "title": "编辑巡检点功能",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1789605559536,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1789605559536-zylyek713"
     }
   ],
   "modules": [
