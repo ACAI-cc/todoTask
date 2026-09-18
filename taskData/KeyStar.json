@@ -1399,9 +1399,9 @@
       "id": "1789605559536-zylyek713",
       "title": "编辑巡检点功能",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1789605559536,
-      "completedAt": null,
+      "completedAt": 1789692880451,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1409,6 +1409,36 @@
       "movedAt": null,
       "contact": null,
       "originId": "1789605559536-zylyek713"
+    },
+    {
+      "id": "1789692897479-se0gd7o9g",
+      "title": "自测编辑巡检点功能",
+      "moduleId": "paused",
+      "completed": false,
+      "createdAt": 1789692897479,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1789692897479-se0gd7o9g"
+    },
+    {
+      "id": "1789692909443-4pozv5x8w",
+      "title": "自测历史趋势查询",
+      "moduleId": "paused",
+      "completed": false,
+      "createdAt": 1789692909443,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1789692909443-4pozv5x8w"
     }
   ],
   "modules": [
