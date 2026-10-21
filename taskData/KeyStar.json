@@ -1529,6 +1529,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1792567968075-5iqtxqe0k"
+    },
+    {
+      "id": "1792575283437-0w49sdms7",
+      "title": "再次识别按钮支持红外测温动作",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1792575283437,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1792575283437-0w49sdms7"
     }
   ],
   "modules": [
