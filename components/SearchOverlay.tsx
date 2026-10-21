@@ -59,11 +59,13 @@ export default function SearchOverlay() {
       result = result.filter((t) => t.moduleId === searchFilters.moduleId);
     }
 
-    // 状态筛选
+    // 状态筛选（已完成与已废弃按 status 精确区分）
     if (searchFilters.status === "completed") {
-      result = result.filter((t) => t.completed);
+      result = result.filter((t) => t.status === "completed");
     } else if (searchFilters.status === "uncompleted") {
-      result = result.filter((t) => !t.completed);
+      result = result.filter((t) => t.status === "todo");
+    } else if (searchFilters.status === "discarded") {
+      result = result.filter((t) => t.status === "discarded");
     }
 
     // 优先级筛选
@@ -144,6 +146,7 @@ export default function SearchOverlay() {
             <option value="all">全部状态</option>
             <option value="uncompleted">未完成</option>
             <option value="completed">已完成</option>
+            <option value="discarded">已废弃</option>
           </select>
 
           {/* 优先级筛选 */}
@@ -219,27 +222,38 @@ export default function SearchOverlay() {
                       )}
                     </div>
 
-                    {/* 完成状态 */}
-                    <div
-                      className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                        task.completed
-                          ? "bg-gray-400 border-gray-400"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {task.completed && (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                          <path d="M20 6 9 17l-5-5" />
+                    {/* 状态图标：未完成 / 已完成 / 已废弃 */}
+                    {task.status === "discarded" ? (
+                      <div className="shrink-0 w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.2">
+                          <circle cx="12" cy="12" r="8" />
+                          <path d="M6 18 18 6" />
                         </svg>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div
+                        className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                          task.completed
+                            ? "bg-gray-400 border-gray-400"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {task.completed && (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        )}
+                      </div>
+                    )}
 
                     {/* 标题 */}
                     <span
                       className={`flex-1 text-sm ${
-                        task.completed
-                          ? "text-gray-400 line-through"
-                          : "text-gray-700"
+                        task.status === "discarded"
+                          ? "text-gray-400" // 已废弃：灰化但不加删除线
+                          : task.completed
+                            ? "text-gray-400 line-through"
+                            : "text-gray-700"
                       }`}
                     >
                       {highlightText(task.title, searchQuery)}
@@ -253,6 +267,13 @@ export default function SearchOverlay() {
                           <circle cx="12" cy="7" r="4" />
                         </svg>
                         {highlightText(task.contact, searchQuery)}
+                      </span>
+                    )}
+
+                    {/* 已废弃徽章 */}
+                    {task.status === "discarded" && (
+                      <span className="shrink-0 text-[10px] leading-none text-gray-500 bg-gray-100 border border-gray-200 px-1.5 py-1 rounded">
+                        已废弃
                       </span>
                     )}
 

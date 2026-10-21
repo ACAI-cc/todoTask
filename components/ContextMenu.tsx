@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { useTaskStore } from "@/store/useTaskStore";
-import { Quadrant } from "@/types";
+import { Quadrant, TaskStatus } from "@/types";
 import { QUADRANT_CONFIG, QUADRANT_LIST } from "@/lib/constants";
 
 export default function ContextMenu() {
@@ -13,6 +14,7 @@ export default function ContextMenu() {
   const moveTask = useTaskStore((s) => s.moveTask);
   const setQuadrant = useTaskStore((s) => s.setQuadrant);
   const editTaskContact = useTaskStore((s) => s.editTaskContact);
+  const setTaskStatus = useTaskStore((s) => s.setTaskStatus);
   const [showMoveSubmenu, setShowMoveSubmenu] = useState(false);
   const [showContactInput, setShowContactInput] = useState(false);
   const [contactValue, setContactValue] = useState("");
@@ -65,9 +67,46 @@ export default function ContextMenu() {
     .filter((m) => m.id !== task.moduleId)
     .sort((a, b) => a.order - b.order);
 
+  // 状态切换图标
+  const checkIcon: ReactNode = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  );
+  const banIcon: ReactNode = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M5.6 5.6l12.8 12.8" />
+    </svg>
+  );
+  const undoIcon: ReactNode = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
+      <path d="M3 7v6h6" />
+      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+    </svg>
+  );
+
+  // 根据当前状态给出可用的目标状态
+  const statusActions: { status: TaskStatus; label: string; icon: ReactNode }[] =
+    task.status === "todo"
+      ? [
+          { status: "completed", label: "标记为已完成", icon: checkIcon },
+          { status: "discarded", label: "废弃", icon: banIcon },
+        ]
+      : task.status === "completed"
+        ? [
+            { status: "todo", label: "恢复为未完成", icon: undoIcon },
+            { status: "discarded", label: "改为废弃", icon: banIcon },
+          ]
+        : [
+            { status: "todo", label: "恢复为未完成", icon: undoIcon },
+            { status: "completed", label: "改为已完成", icon: checkIcon },
+          ];
+
   // 调整菜单位置，确保不超出视口
   const menuWidth = 200;
-  const menuHeight = showMoveSubmenu ? 300 : 220;
+  const menuHeight = showMoveSubmenu ? 370 : 290;
   const x = Math.min(contextMenu.x, window.innerWidth - menuWidth - 10);
   const y = Math.min(contextMenu.y, window.innerHeight - menuHeight - 10);
 
@@ -165,6 +204,23 @@ export default function ContextMenu() {
           <span>{task.contact ? `编辑联系人：${task.contact}` : "添加联系人"}</span>
         </button>
       )}
+
+      <div className="border-t border-gray-100 my-1" />
+
+      {/* 状态切换：完成 / 废弃 / 恢复 */}
+      {statusActions.map((action) => (
+        <button
+          key={action.status}
+          onClick={() => {
+            setTaskStatus(task.id, action.status);
+            setContextMenu(null);
+          }}
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          {action.icon}
+          <span>{action.label}</span>
+        </button>
+      ))}
 
       <div className="border-t border-gray-100 my-1" />
 

@@ -1,4 +1,4 @@
-import { Quadrant } from "@/types";
+import { Quadrant, TaskStatus } from "@/types";
 import { QUADRANT_CONFIG } from "./constants";
 
 // 生成唯一 ID
@@ -44,7 +44,31 @@ export function getQuadrantConfig(quadrant: Quadrant | null) {
   return QUADRANT_CONFIG[quadrant];
 }
 
-// 任务排序：未完成在上（按创建时间倒序），已完成在下（按完成时间倒序）
+/**
+ * 归一化任务状态，兼容旧数据：
+ * - 无 status 字段（旧数据）时，由 completed 推导：true → "completed"，否则 "todo"
+ * - 有 status 字段时直接采用（非法值兜底为 "todo"）
+ */
+export function normalizeTaskStatus(task: {
+  status?: unknown;
+  completed?: unknown;
+}): TaskStatus {
+  if (
+    task.status === "todo" ||
+    task.status === "completed" ||
+    task.status === "discarded"
+  ) {
+    return task.status;
+  }
+  return task.completed ? "completed" : "todo";
+}
+
+/**
+ * 任务排序：未结束在上（按创建时间倒序），已结束在下（按 completedAt 倒序）。
+ *
+ * 「已结束」包含已完成与已废弃两种状态（Task.completed 派生字段为 true），
+ * 两者混在一起统一按 completedAt 倒序，不区分先后。
+ */
 export function sortTasks<T extends { completed: boolean; createdAt: number; completedAt: number | null }>(
   tasks: T[]
 ): T[] {

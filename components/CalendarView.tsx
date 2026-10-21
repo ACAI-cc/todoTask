@@ -24,8 +24,11 @@ export default function CalendarView() {
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   // 获取去重后的已完成任务（同一 originId 仅保留 completedAt 最晚的）
+  // 注意：日历只统计 status === "completed"，已废弃任务不纳入统计
   const getDeduplicatedCompletedTasks = (): Task[] => {
-    const completedTasks = tasks.filter((t) => t.completed && t.completedAt);
+    const completedTasks = tasks.filter(
+      (t) => t.completed && t.completedAt && t.status !== "discarded"
+    );
     
     const originMap = new Map<string, Task>();
     for (const task of completedTasks) {

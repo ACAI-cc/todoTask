@@ -11,6 +11,7 @@ import {
   PersistedData,
   Workspace,
   WorkspaceData,
+  TaskStatus,
 } from "@/types";
 import type { SyncStatus } from "@/types/electron";
 import { PRESET_MODULES, DELETE_UNDO_SECONDS } from "@/lib/constants";
@@ -18,6 +19,7 @@ import {
   generateId,
   isFileSystemAccessSupported,
   isElectron,
+  normalizeTaskStatus,
 } from "@/lib/utils";
 import {
   DebouncedFileWriter,
@@ -123,6 +125,7 @@ interface TaskStore {
   undoDelete: (toastId: string) => void;
   dismissDeleteToast: (toastId: string) => void;
   toggleTask: (taskId: string) => void;
+  setTaskStatus: (taskId: string, status: TaskStatus) => void;
   editTaskTitle: (taskId: string, title: string) => void;
   editTaskContact: (taskId: string, contact: string | null) => void;
   moveTask: (taskId: string, toModuleId: string) => void;
@@ -194,15 +197,21 @@ function getDefaultModules(): ModuleItem[] {
 // 数据迁移：确保旧数据文件包含新字段
 function migrateData(data: WorkspaceData): WorkspaceData {
   return {
-    tasks: (data.tasks || []).map((t) => ({
-      ...t,
-      contact: t.contact ?? null,
-      movedToModuleId: t.movedToModuleId ?? null,
-      movedToTaskId: t.movedToTaskId ?? null,
-      movedAt: t.movedAt ?? null,
-      sourceModuleId: t.sourceModuleId ?? null,
-      originId: t.originId ?? t.id,
-    })),
+    tasks: (data.tasks || []).map((t) => {
+      // 向后兼容：旧数据没有 status 字段，由 completed 推导（true → completed，否则 todo）
+      const status = normalizeTaskStatus(t);
+      return {
+        ...t,
+        status,
+        completed: status !== "todo", // 派生字段，始终与 status 保持一致
+        contact: t.contact ?? null,
+        movedToModuleId: t.movedToModuleId ?? null,
+        movedToTaskId: t.movedToTaskId ?? null,
+        movedAt: t.movedAt ?? null,
+        sourceModuleId: t.sourceModuleId ?? null,
+        originId: t.originId ?? t.id,
+      };
+    }),
     modules: (data.modules || []).map((m) => ({
       ...m,
       bgColor: m.bgColor ?? null,
@@ -1453,6 +1462,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         id: newTaskId,
         title: trimmed,
         moduleId,
+        status: "todo",
         completed: false,
         createdAt: Date.now(),
         completedAt: null,
@@ -1533,25 +1543,41 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       }));
     },
 
+    // 勾选框：在 todo <-> completed 之间切换
+    // 已废弃任务不响应勾选（左侧为禁止图标），需通过右键菜单「恢复为未完成」
     toggleTask: (taskId) => {
       const state = get();
       const task = state.tasks.find((t) => t.id === taskId);
       if (!task) return;
+      if (task.status === "discarded") return;
 
-      // 如果任务因移动而标记为完成，取消勾选 = 撤销移动
-      if (task.completed && task.movedToTaskId) {
+      get().setTaskStatus(taskId, task.status === "todo" ? "completed" : "todo");
+    },
+
+    // 统一的任务状态切换入口（todo / completed / discarded）
+    // 废弃与完成共用 completedAt，因此排序逻辑保持不变；写入后触发自动保存与 Git 同步
+    setTaskStatus: (taskId, status) => {
+      const state = get();
+      const task = state.tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      if (task.status === status) return;
+
+      // 恢复为未完成时，若该任务是因跨模块移动而结束的，则等价于撤销移动
+      if (status === "todo" && task.movedToTaskId) {
         get().undoTaskMove(taskId);
         return;
       }
 
-      set((state) => ({
-        tasks: state.tasks.map((t) => {
+      const settledAt = Date.now();
+
+      set((s) => ({
+        tasks: s.tasks.map((t): Task => {
           if (t.id !== taskId) return t;
-          if (t.completed) {
-            return { ...t, completed: false, completedAt: null };
-          } else {
-            return { ...t, completed: true, completedAt: Date.now() };
+          if (status === "todo") {
+            return { ...t, status, completed: false, completedAt: null };
           }
+          // completed / discarded 共用 completedAt：记录完成时间或废弃时间
+          return { ...t, status, completed: true, completedAt: settledAt };
         }),
       }));
       triggerSave();
@@ -1595,6 +1621,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         ...task,
         id: newTaskId,
         moduleId: toModuleId,
+        status: "todo",
         completed: false,
         completedAt: null,
         sourceModuleId: fromModuleId,
@@ -1609,10 +1636,11 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       // 原任务保留在原模块，标记为已完成并记录移动信息
       set((s) => ({
         tasks: s.tasks
-          .map((t) =>
+          .map((t): Task =>
             t.id === taskId
               ? {
                   ...t,
+                  status: "completed",
                   completed: true,
                   completedAt: moveTime,
                   movedToModuleId: toModuleId,
@@ -1637,10 +1665,11 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       set((s) => ({
         tasks: s.tasks
           .filter((t) => t.id !== copyId)
-          .map((t) =>
+          .map((t): Task =>
             t.id === taskId
               ? {
                   ...t,
+                  status: "todo",
                   completed: false,
                   completedAt: null,
                   movedToModuleId: null,

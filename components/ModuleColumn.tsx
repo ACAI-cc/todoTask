@@ -21,7 +21,9 @@ export default function ModuleColumn({ module }: ModuleColumnProps) {
   const moduleTasks = tasks.filter((t) => t.moduleId === module.id);
   const sortedTasks = sortTasks(moduleTasks);
   const uncompletedTasks = sortedTasks.filter((t) => !t.completed);
+  // 「已结束」区域：已完成与已废弃混在一起，统一按 completedAt 倒序（排序逻辑不变）
   const completedTasks = sortedTasks.filter((t) => t.completed);
+  const hasDiscarded = completedTasks.some((t) => t.status === "discarded");
 
   // 该模块下的象限变更记录（移动记录不再使用独立记录条目）
   const moduleMoveRecords = moveRecords
@@ -99,12 +101,14 @@ export default function ModuleColumn({ module }: ModuleColumnProps) {
         {completedTasks.length > 0 && (
           <div className="flex items-center gap-2 py-2">
             <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">已完成</span>
+            <span className="text-xs text-gray-400">
+              {hasDiscarded ? "已完成 / 已废弃" : "已完成"}
+            </span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
         )}
 
-        {/* 已完成任务 */}
+        {/* 已完成任务（含已废弃，两者混排） */}
         {completedTasks.map((task) => (
           <TaskCard key={task.id} task={task} />
         ))}

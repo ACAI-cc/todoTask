@@ -21,7 +21,10 @@ export default function QuadrantCell({ quadrant }: QuadrantCellProps) {
     data: { type: "quadrant", quadrant },
   });
 
-  const quadrantTasks = tasks.filter((t) => t.quadrant === quadrant);
+  // 四象限只关注进行中/已完成的任务，已废弃任务不出现在此视图
+  const quadrantTasks = tasks.filter(
+    (t) => t.quadrant === quadrant && t.status !== "discarded"
+  );
   const sortedTasks = sortTasks(quadrantTasks);
   const uncompleted = sortedTasks.filter((t) => !t.completed);
   const completed = sortedTasks.filter((t) => t.completed);

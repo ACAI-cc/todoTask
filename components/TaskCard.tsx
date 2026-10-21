@@ -41,6 +41,9 @@ export default function TaskCard({
   // 是否是被移动后标记为完成的任务
   const isMovedTask = !!(task.completed && task.movedToModuleId);
 
+  // 是否已废弃（与「已完成」同属已结束区域，但视觉与操作上需区分）
+  const isDiscarded = task.status === "discarded";
+
   // dnd-kit 拖拽（已完成任务不可拖拽）
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -51,7 +54,12 @@ export default function TaskCard({
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.4 : 1,
+    // 已废弃任务整体降低不透明度（拖拽中的半透明优先）
+    opacity: isDragging ? 0.4 : isDiscarded ? 0.6 : 1,
+    // 已废弃任务左侧加一条深灰色细边框
+    ...(isDiscarded
+      ? { borderLeftWidth: 3, borderLeftColor: "#6b7280" }
+      : {}),
   };
 
   const quadrantConfig = task.quadrant
@@ -184,31 +192,50 @@ export default function TaskCard({
         )}
         {!quadrantConfig && <div className="w-2 shrink-0" />}
 
-        {/* 勾选框 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleTask(task.id);
-          }}
-          className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-            task.completed
-              ? "bg-gray-400 border-gray-400"
-              : "border-gray-300 hover:border-gray-400"
-          }`}
-        >
-          {task.completed && (
+        {/* 状态图标：未完成 = 勾选框；已完成 = 灰色勾选；已废弃 = 禁止图标（不可直接勾选） */}
+        {isDiscarded ? (
+          <div
+            className="shrink-0 w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center cursor-not-allowed"
+            title="已废弃（右键菜单可恢复为未完成）"
+          >
             <svg
-              width="10"
-              height="10"
+              width="11"
+              height="11"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
-              strokeWidth="3"
+              stroke="#9ca3af"
+              strokeWidth="2.2"
             >
-              <path d="M20 6 9 17l-5-5" />
+              <circle cx="12" cy="12" r="8" />
+              <path d="M6 18 18 6" />
             </svg>
-          )}
-        </button>
+          </div>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTask(task.id);
+            }}
+            className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+              task.completed
+                ? "bg-gray-400 border-gray-400"
+                : "border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            {task.completed && (
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="3"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            )}
+          </button>
+        )}
 
         {/* 任务标题 / 编辑模式 */}
         {isEditing ? (
@@ -244,9 +271,11 @@ export default function TaskCard({
             <span
               onClick={handleStartEdit}
               className={`text-sm ${
-                task.completed
-                  ? "text-gray-400 line-through cursor-default"
-                  : "text-gray-800 cursor-text"
+                isDiscarded
+                  ? "text-gray-400 cursor-default" // 已废弃：灰化但不加删除线
+                  : task.completed
+                    ? "text-gray-400 line-through cursor-default"
+                    : "text-gray-800 cursor-text"
               }`}
             >
               {task.title}
@@ -270,7 +299,8 @@ export default function TaskCard({
                 <>
                   <span>·</span>
                   <span title={formatFullTime(task.completedAt)}>
-                    完成 {relativeTime(task.completedAt)}
+                    {isDiscarded ? "废弃" : "完成"}{" "}
+                    {relativeTime(task.completedAt)}
                   </span>
                 </>
               )}
@@ -367,6 +397,13 @@ export default function TaskCard({
               </>
             )}
           </div>
+        )}
+
+        {/* 已废弃徽章 */}
+        {isDiscarded && (
+          <span className="shrink-0 text-[10px] leading-none text-gray-500 bg-gray-100 border border-gray-200 px-1.5 py-1 rounded">
+            已废弃
+          </span>
         )}
 
         {/* 撤销移动按钮（被移动的任务显示） */}

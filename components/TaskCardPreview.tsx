@@ -36,8 +36,18 @@ export default function TaskCardPreview({
 
   const isMovedTask = !!(task.completed && task.movedToModuleId);
 
+  // 是否已废弃
+  const isDiscarded = task.status === "discarded";
+
   return (
-    <div className="relative bg-white rounded-lg border border-gray-300 px-3 py-2 shadow-lg no-select">
+    <div
+      className="relative bg-white rounded-lg border border-gray-300 px-3 py-2 shadow-lg no-select"
+      style={
+        isDiscarded
+          ? { opacity: 0.6, borderLeftWidth: 3, borderLeftColor: "#6b7280" }
+          : undefined
+      }
+    >
       {/* 来源标签 —— 纯文字样式 */}
       {sourceModule && (
         <div className="mb-1">
@@ -63,26 +73,39 @@ export default function TaskCardPreview({
         )}
         {!quadrantConfig && <div className="w-2 shrink-0" />}
 
-        {/* 勾选框 */}
-        <div
-          className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-            task.completed
-              ? "bg-gray-400 border-gray-400"
-              : "border-gray-300"
-          }`}
-        >
-          {task.completed && (
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-              <path d="M20 6 9 17l-5-5" />
+        {/* 状态图标：未完成 = 勾选框；已完成 = 灰色勾选；已废弃 = 禁止图标 */}
+        {isDiscarded ? (
+          <div className="shrink-0 w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.2">
+              <circle cx="12" cy="12" r="8" />
+              <path d="M6 18 18 6" />
             </svg>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div
+            className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+              task.completed
+                ? "bg-gray-400 border-gray-400"
+                : "border-gray-300"
+            }`}
+          >
+            {task.completed && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            )}
+          </div>
+        )}
 
         {/* 任务标题 + 联系人 */}
         <div className="flex-1 min-w-0">
           <span
             className={`text-sm ${
-              task.completed ? "text-gray-400 line-through" : "text-gray-800"
+              isDiscarded
+                ? "text-gray-400" // 已废弃：灰化但不加删除线
+                : task.completed
+                  ? "text-gray-400 line-through"
+                  : "text-gray-800"
             }`}
           >
             {task.title}

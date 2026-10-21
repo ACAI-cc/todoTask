@@ -5,14 +5,29 @@ export type Quadrant =
   | "not_important_urgent"
   | "not_important_not_urgent";
 
+// 任务状态：进行中 / 已完成 / 已废弃
+export type TaskStatus = "todo" | "completed" | "discarded";
+
 // 任务类型
 export interface Task {
   id: string;
   title: string;
   moduleId: string;
+  /**
+   * 任务的精确状态，是唯一的语义来源。
+   * 判断「已完成 / 已废弃」请一律读取此字段。
+   */
+  status: TaskStatus;
+  /**
+   * 任务是否已结束（已归档）。由 status 派生：status !== "todo" 时为 true。
+   *
+   * 保留这个派生字段，是为了让「分组 + 排序」只有一份实现：
+   * 已完成与已废弃任务同属「已结束」区域，混在一起统一按 completedAt 倒序，不区分先后。
+   * 新代码请不要用它来判断「是否已完成」，请改用 status。
+   */
   completed: boolean;
   createdAt: number;
-  completedAt: number | null;
+  completedAt: number | null; // 完成时间 / 废弃时间（两者共用同一字段，保证排序逻辑不变）
   quadrant: Quadrant | null;
   sourceModuleId: string | null; // 最近一次来源模块（目标模块中副本的来源标签）
   // 跨模块移动后，原模块中任务的移动信息
@@ -57,7 +72,7 @@ export interface DeleteToastItem {
 // 搜索筛选条件
 export interface SearchFilters {
   moduleId: string | null; // null = 所有模块
-  status: "all" | "completed" | "uncompleted";
+  status: "all" | "completed" | "uncompleted" | "discarded";
   quadrant: Quadrant | "none" | "all";
 }
 
