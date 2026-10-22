@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useTaskStore } from "@/store/useTaskStore";
 import { Quadrant, TaskStatus } from "@/types";
 import { QUADRANT_CONFIG, QUADRANT_LIST } from "@/lib/constants";
+import { normalizeTaskStatus } from "@/lib/utils";
 
 export default function ContextMenu() {
   const contextMenu = useTaskStore((s) => s.contextMenu);
@@ -87,22 +88,32 @@ export default function ContextMenu() {
     </svg>
   );
 
-  // 根据当前状态给出可用的目标状态
-  const statusActions: { status: TaskStatus; label: string; icon: ReactNode }[] =
-    task.status === "todo"
-      ? [
-          { status: "completed", label: "标记为已完成", icon: checkIcon },
-          { status: "discarded", label: "废弃", icon: banIcon },
-        ]
-      : task.status === "completed"
-        ? [
-            { status: "todo", label: "恢复为未完成", icon: undoIcon },
-            { status: "discarded", label: "改为废弃", icon: banIcon },
-          ]
-        : [
-            { status: "todo", label: "恢复为未完成", icon: undoIcon },
-            { status: "completed", label: "改为已完成", icon: checkIcon },
-          ];
+  // 每个「当前状态」对应的可切换目标：
+  //   todo       → 改为已完成 / 废弃
+  //   completed  → 恢复为未完成 / 废弃
+  //   discarded  → 恢复为未完成 / 改为已完成
+  const STATUS_ACTIONS: Record<
+    TaskStatus,
+    { status: TaskStatus; label: string; icon: ReactNode }[]
+  > = {
+    todo: [
+      { status: "completed", label: "改为已完成", icon: checkIcon },
+      { status: "discarded", label: "废弃", icon: banIcon },
+    ],
+    completed: [
+      { status: "todo", label: "恢复为未完成", icon: undoIcon },
+      { status: "discarded", label: "废弃", icon: banIcon },
+    ],
+    discarded: [
+      { status: "todo", label: "恢复为未完成", icon: undoIcon },
+      { status: "completed", label: "改为已完成", icon: checkIcon },
+    ],
+  };
+
+  // 实时按任务当前 status 取值；数据缺少 status 字段时由 completed 推导，
+  // 不存在任何中间状态，也不需要二次右键刷新。
+  const currentStatus = normalizeTaskStatus(task);
+  const statusActions = STATUS_ACTIONS[currentStatus];
 
   // 调整菜单位置，确保不超出视口
   const menuWidth = 200;
@@ -207,13 +218,17 @@ export default function ContextMenu() {
 
       <div className="border-t border-gray-100 my-1" />
 
-      {/* 状态切换：完成 / 废弃 / 恢复 */}
+      {/* 状态切换：按任务当前 status 实时渲染，点击后立即生效并原地刷新菜单 */}
+      <div className="px-3 py-1 text-xs text-gray-400 font-medium">
+        修改状态
+      </div>
       {statusActions.map((action) => (
         <button
           key={action.status}
           onClick={() => {
             setTaskStatus(task.id, action.status);
-            setContextMenu(null);
+            // 不关闭菜单：状态写入 store 后本组件会按新的 status 重新渲染选项，
+            // 同时 setTaskStatus 内部已触发自动保存与 Git 同步
           }}
           className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >

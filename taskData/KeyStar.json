@@ -1198,8 +1198,7 @@
       "movedToTaskId": null,
       "movedAt": null,
       "contact": null,
-      "originId": "1787797390492-29ufnfybr",
-      "status": "todo"
+      "originId": "1787797390492-29ufnfybr"
     },
     {
       "id": "1787809411911-zs9a629yz",
@@ -1505,9 +1504,9 @@
       "id": "1792400251832-q69mpvfk8",
       "title": "定时更新摄像头code",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1792400251833,
-      "completedAt": null,
+      "completedAt": 1792640358204,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1545,6 +1544,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1792575283437-0w49sdms7"
+    },
+    {
+      "id": "1792640326993-u2f224tmv",
+      "title": "湖北场站问题处理",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1792640326993,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1792640326993-u2f224tmv"
     }
   ],
   "modules": [
