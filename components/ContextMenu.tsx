@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useTaskStore } from "@/store/useTaskStore";
 import { Quadrant, TaskStatus } from "@/types";
 import { QUADRANT_CONFIG, QUADRANT_LIST } from "@/lib/constants";
 import { normalizeTaskStatus } from "@/lib/utils";
+
+const VIEWPORT_MARGIN = 8; // 菜单与视口边缘的安全间距
+const SUBMENU_GAP = 6; // 子菜单与父菜单之间的间距
+const SUBMENU_MIN_WIDTH = 180; // 子菜单最小宽度（用于翻转判断）
+const SUBMENU_ROW_HEIGHT = 32; // 子菜单每行估算高度
 
 export default function ContextMenu() {
   const contextMenu = useTaskStore((s) => s.contextMenu);
@@ -16,11 +21,24 @@ export default function ContextMenu() {
   const setQuadrant = useTaskStore((s) => s.setQuadrant);
   const editTaskContact = useTaskStore((s) => s.editTaskContact);
   const setTaskStatus = useTaskStore((s) => s.setTaskStatus);
+
   const [showMoveSubmenu, setShowMoveSubmenu] = useState(false);
+  const [submenuSide, setSubmenuSide] = useState<"right" | "left">("right");
+  const [submenuAlignUp, setSubmenuAlignUp] = useState(false);
   const [showContactInput, setShowContactInput] = useState(false);
   const [contactValue, setContactValue] = useState("");
   const contactInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  // 统一关闭入口：清理子菜单 / 输入态，并清空菜单状态
+  const closeMenu = useCallback(() => {
+    setShowMoveSubmenu(false);
+    setShowContactInput(false);
+    setSubmenuAlignUp(false);
+    setMenuPos(null);
+    setContextMenu(null);
+  }, [setContextMenu]);
 
   useEffect(() => {
     if (!contextMenu) {
@@ -36,7 +54,7 @@ export default function ContextMenu() {
 
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setContextMenu(null);
+        closeMenu();
       }
     };
 
@@ -44,19 +62,53 @@ export default function ContextMenu() {
       if (e.key === "Escape") {
         if (showContactInput) {
           setShowContactInput(false);
+        } else if (showMoveSubmenu) {
+          setShowMoveSubmenu(false);
         } else {
-          setContextMenu(null);
+          closeMenu();
         }
       }
     };
 
+    const handleResize = () => closeMenu();
+
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleResize);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleResize);
     };
-  }, [contextMenu, setContextMenu, showContactInput]);
+  }, [contextMenu, closeMenu, showContactInput, showMoveSubmenu]);
+
+  // 渲染后测量菜单实际尺寸并做边界收敛，保证父菜单完整落在视口内
+  useLayoutEffect(() => {
+    if (!contextMenu) {
+      setMenuPos(null);
+      return;
+    }
+    const el = menuRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let x = contextMenu.x;
+    let y = contextMenu.y;
+
+    if (x + rect.width > vw - VIEWPORT_MARGIN) {
+      x = vw - rect.width - VIEWPORT_MARGIN;
+    }
+    if (y + rect.height > vh - VIEWPORT_MARGIN) {
+      y = vh - rect.height - VIEWPORT_MARGIN;
+    }
+    if (x < VIEWPORT_MARGIN) x = VIEWPORT_MARGIN;
+    if (y < VIEWPORT_MARGIN) y = VIEWPORT_MARGIN;
+
+    setMenuPos({ x, y });
+  }, [contextMenu, showContactInput]);
 
   if (!contextMenu) return null;
 
@@ -115,42 +167,104 @@ export default function ContextMenu() {
   const currentStatus = normalizeTaskStatus(task);
   const statusActions = STATUS_ACTIONS[currentStatus];
 
-  // 调整菜单位置，确保不超出视口
-  const menuWidth = 200;
-  const menuHeight = showMoveSubmenu ? 370 : 290;
-  const x = Math.min(contextMenu.x, window.innerWidth - menuWidth - 10);
-  const y = Math.min(contextMenu.y, window.innerHeight - menuHeight - 10);
+  // 展开「移动到」子菜单前先做边界检测，决定左/右弹出与向上/向下对齐
+  const toggleMoveSubmenu = () => {
+    if (showMoveSubmenu) {
+      setShowMoveSubmenu(false);
+      return;
+    }
+
+    const el = menuRef.current;
+    let side: "right" | "left" = "right";
+    let alignUp = false;
+
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const needed = SUBMENU_GAP + SUBMENU_MIN_WIDTH;
+      const spaceRight = vw - rect.right - VIEWPORT_MARGIN;
+      const spaceLeft = rect.left - VIEWPORT_MARGIN;
+
+      if (spaceRight < needed) {
+        // 右侧放不下：优先翻到左侧；左侧也放不下时选空间更大的一侧
+        side = spaceLeft >= needed || spaceLeft > spaceRight ? "left" : "right";
+      }
+
+      // 纵向：估算子菜单高度，下方空间不足且上方更宽裕时改为向上对齐
+      const estimatedHeight = Math.min(
+        vh - VIEWPORT_MARGIN * 2,
+        Math.max(44, otherModules.length * SUBMENU_ROW_HEIGHT + 16)
+      );
+      if (
+        rect.top + estimatedHeight > vh - VIEWPORT_MARGIN &&
+        rect.bottom - estimatedHeight >= VIEWPORT_MARGIN
+      ) {
+        alignUp = true;
+      }
+    }
+
+    setSubmenuSide(side);
+    setSubmenuAlignUp(alignUp);
+    setShowMoveSubmenu(true);
+  };
 
   return (
     <div
       ref={menuRef}
       className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[200px] animate-scale-in"
-      style={{ left: x, top: y }}
+      style={{
+        left: menuPos ? menuPos.x : contextMenu.x,
+        top: menuPos ? menuPos.y : contextMenu.y,
+        visibility: menuPos ? "visible" : "hidden",
+      }}
     >
       {/* 移动到... */}
-      <div className="relative">
+      <div>
         <button
-          onClick={() => setShowMoveSubmenu(!showMoveSubmenu)}
+          onClick={toggleMoveSubmenu}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 12h14M12 5l7 7-7 7" />
           </svg>
           <span>移动到...</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ml-auto">
-            <path d="m9 18 6-6-6-6" />
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="ml-auto"
+          >
+            {submenuSide === "right" ? (
+              <path d="m9 18 6-6-6-6" />
+            ) : (
+              <path d="m15 18-6-6 6-6" />
+            )}
           </svg>
         </button>
 
-        {/* 移动到子菜单 */}
+        {/* 移动到子菜单：按可用空间自动左右翻转 / 上下对齐 */}
         {showMoveSubmenu && (
-          <div className="absolute left-full top-0 ml-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[180px] animate-scale-in">
+          <div
+            className="absolute z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[180px] max-w-[180px] animate-scale-in overflow-y-auto"
+            style={{
+              maxHeight: `calc(100vh - ${VIEWPORT_MARGIN * 2}px)`,
+              ...(submenuSide === "right"
+                ? { left: `calc(100% + ${SUBMENU_GAP}px)` }
+                : { right: `calc(100% + ${SUBMENU_GAP}px)` }),
+              ...(submenuAlignUp ? { bottom: 0 } : { top: 0 }),
+            }}
+          >
             {otherModules.map((module) => (
               <button
                 key={module.id}
                 onClick={() => {
                   moveTask(task.id, module.id);
-                  setContextMenu(null);
+                  closeMenu();
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
@@ -218,7 +332,7 @@ export default function ContextMenu() {
 
       <div className="border-t border-gray-100 my-1" />
 
-      {/* 状态切换：按任务当前 status 实时渲染，点击后立即生效并原地刷新菜单 */}
+      {/* 状态切换：按任务当前 status 实时渲染 */}
       <div className="px-3 py-1 text-xs text-gray-400 font-medium">
         修改状态
       </div>
@@ -227,8 +341,8 @@ export default function ContextMenu() {
           key={action.status}
           onClick={() => {
             setTaskStatus(task.id, action.status);
-            // 不关闭菜单：状态写入 store 后本组件会按新的 status 重新渲染选项，
-            // 同时 setTaskStatus 内部已触发自动保存与 Git 同步
+            // 与其余菜单项保持一致：操作后立即关闭整个菜单
+            closeMenu();
           }}
           className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >
@@ -253,7 +367,7 @@ export default function ContextMenu() {
                 task.id,
                 task.quadrant === q ? null : q
               );
-              setContextMenu(null);
+              closeMenu();
             }}
             className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
@@ -274,7 +388,7 @@ export default function ContextMenu() {
         <button
           onClick={() => {
             setQuadrant(task.id, null);
-            setContextMenu(null);
+            closeMenu();
           }}
           className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
         >
