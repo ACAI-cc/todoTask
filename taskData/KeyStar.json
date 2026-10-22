@@ -1255,7 +1255,7 @@
       "completed": false,
       "createdAt": 1787797378686,
       "completedAt": null,
-      "quadrant": null,
+      "quadrant": "important_urgent",
       "sourceModuleId": null,
       "movedToModuleId": null,
       "movedToTaskId": null,
