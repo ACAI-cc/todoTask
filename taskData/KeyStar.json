@@ -1619,6 +1619,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1792660771785-qxsel40ws"
+    },
+    {
+      "id": "1792661693529-dg0jyzpat",
+      "title": "国网协议机器人数据点适配成摄像头的",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1792661693529,
+      "completedAt": null,
+      "quadrant": "not_important_not_urgent",
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1792661693529-dg0jyzpat"
     }
   ],
   "modules": [
