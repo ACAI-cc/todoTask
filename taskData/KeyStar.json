@@ -1198,7 +1198,8 @@
       "movedToTaskId": null,
       "movedAt": null,
       "contact": null,
-      "originId": "1787797390492-29ufnfybr"
+      "originId": "1787797390492-29ufnfybr",
+      "status": "todo"
     },
     {
       "id": "1787809411911-zs9a629yz",
