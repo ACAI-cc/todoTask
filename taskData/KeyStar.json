@@ -1634,6 +1634,21 @@
       "movedAt": null,
       "contact": null,
       "originId": "1792661693529-dg0jyzpat"
+    },
+    {
+      "id": "1792740352826-gvptmws3a",
+      "title": "addCameraPoint做code和预置点的锁，和重复校验",
+      "moduleId": "not-started",
+      "completed": false,
+      "createdAt": 1792740352826,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": "黄嘉声",
+      "originId": "1792740352826-gvptmws3a"
     }
   ],
   "modules": [
