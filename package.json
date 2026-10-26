@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "dev:electron": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "build:electron": "cross-env BUILD_TARGET=electron CSC_IDENTITY_AUTO_DISCOVERY=false next build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --config.win.signAndEditExecutable=false",
+    "build:electron": "cross-env BUILD_TARGET=electron CSC_IDENTITY_AUTO_DISCOVERY=false next build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --config.win.signAndEditExecutable=false --publish never",
     "electron": "electron ."
   },
   "dependencies": {
@@ -42,7 +42,7 @@
     "appId": "com.taskflow.app",
     "productName": "TaskFlow",
     "directories": {
-      "output": "dist-electron"
+      "output": "release"
     },
     "files": [
       "out/**/*",
