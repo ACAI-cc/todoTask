@@ -1588,9 +1588,9 @@
       "id": "1792381301983-ons1hsxzc",
       "title": "sql自动添加拆分出来",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1792381301983,
-      "completedAt": null,
+      "completedAt": 1793069963870,
       "quadrant": "not_important_urgent",
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1598,7 +1598,7 @@
       "movedAt": null,
       "contact": null,
       "originId": "1792381301983-ons1hsxzc",
-      "status": "todo"
+      "status": "completed"
     },
     {
       "id": "1792400251832-q69mpvfk8",
