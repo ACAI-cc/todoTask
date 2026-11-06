@@ -1855,6 +1855,22 @@
       "movedAt": null,
       "contact": null,
       "originId": "1793321741386-jmjxo5h8w"
+    },
+    {
+      "id": "1793926163742-63dyp5sax",
+      "title": "巡检点列表返回图片（缩略图也要）",
+      "moduleId": "not-started",
+      "status": "todo",
+      "completed": false,
+      "createdAt": 1793926163742,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1793926163742-63dyp5sax"
     }
   ],
   "modules": [
