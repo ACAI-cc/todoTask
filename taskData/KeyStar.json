@@ -1871,6 +1871,22 @@
       "movedAt": null,
       "contact": null,
       "originId": "1793926163742-63dyp5sax"
+    },
+    {
+      "id": "1793943321339-adwk5tvqw",
+      "title": "巡检点列表增加巡检点类型",
+      "moduleId": "not-started",
+      "status": "todo",
+      "completed": false,
+      "createdAt": 1793943321339,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1793943321339-adwk5tvqw"
     }
   ],
   "modules": [
