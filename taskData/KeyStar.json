@@ -1668,9 +1668,9 @@
       "id": "1792647628047-ax7iw5vgg",
       "title": "任务日报配置剥离到nacos",
       "moduleId": "not-started",
-      "completed": false,
+      "completed": true,
       "createdAt": 1792647628047,
-      "completedAt": null,
+      "completedAt": 1794279818035,
       "quadrant": "important_not_urgent",
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1678,7 +1678,7 @@
       "movedAt": null,
       "contact": null,
       "originId": "1792647628047-ax7iw5vgg",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1792654655887-31sjlj8l2",
