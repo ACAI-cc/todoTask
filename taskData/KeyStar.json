@@ -148,9 +148,9 @@
       "id": "1784619644521-0kx5gfe79",
       "title": "5.11启动服务自动添加SQL新增字段和修改变化字段",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619644521,
-      "completedAt": null,
+      "completedAt": 1794984473452,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -158,15 +158,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619644521-0kx5gfe79",
-      "status": "todo"
+      "status": "completed"
     },
     {
       "id": "1784619648734-15mx9d0e3",
       "title": "5.21纠偏",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619648734,
-      "completedAt": null,
+      "completedAt": 1794984466152,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -174,15 +174,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619648734-15mx9d0e3",
-      "status": "todo"
+      "status": "completed"
     },
     {
       "id": "1784619652963-n5vrt4rq5",
       "title": "6.15用户自注销",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619652963,
-      "completedAt": null,
+      "completedAt": 1794984416368,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -190,15 +190,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619652963-n5vrt4rq5",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1784619666454-lqhd8rf19",
       "title": "6.16同步数据脚本",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619666454,
-      "completedAt": null,
+      "completedAt": 1794984414783,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -206,15 +206,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619666454-lqhd8rf19",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1784619671746-ezotd5shf",
       "title": "6.18绑定和解绑账号优化设计",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619671746,
-      "completedAt": null,
+      "completedAt": 1794984408319,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -222,15 +222,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619671746-ezotd5shf",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1784619677144-lrhi2uoo3",
       "title": "7.01菜单增加缓存",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619677144,
-      "completedAt": null,
+      "completedAt": 1794984406114,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -238,15 +238,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619677144-lrhi2uoo3",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1784619681584-ikttwq0if",
       "title": "7.7红外测温增加可见光巡检点动作",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619681584,
-      "completedAt": null,
+      "completedAt": 1794984404582,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -254,15 +254,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619681584-ikttwq0if",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1784619685903-pb64eb53j",
       "title": "7.9国网协议结合巡检点，（前面还有覆盖结果，不存在的点位绑定默认设备入库）",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1784619685903,
-      "completedAt": null,
+      "completedAt": 1794984403046,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -270,7 +270,7 @@
       "movedAt": null,
       "contact": null,
       "originId": "1784619685903-pb64eb53j",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1784624419641-g9ylptms8",
@@ -1108,9 +1108,9 @@
       "id": "1786435512953-s1ltdomke",
       "title": "数据点统计",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1786435512953,
-      "completedAt": null,
+      "completedAt": 1794984400326,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1118,7 +1118,7 @@
       "movedAt": null,
       "contact": null,
       "originId": "1786435512953-s1ltdomke",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1787636724347-d5o18oq70",
@@ -1252,9 +1252,9 @@
       "id": "1787797378686-ihcpd92nz",
       "title": "巡检点列表",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1787797378686,
-      "completedAt": null,
+      "completedAt": 1794984398527,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1262,15 +1262,15 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787797378686-ihcpd92nz",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1787797390492-29ufnfybr",
       "title": "电站总览巡检点统计",
       "moduleId": "unsorted",
-      "completed": false,
+      "completed": true,
       "createdAt": 1787797390492,
-      "completedAt": null,
+      "completedAt": 1794984396670,
       "quadrant": null,
       "sourceModuleId": null,
       "movedToModuleId": null,
@@ -1278,7 +1278,7 @@
       "movedAt": null,
       "contact": null,
       "originId": "1787797390492-29ufnfybr",
-      "status": "todo"
+      "status": "discarded"
     },
     {
       "id": "1787809411911-zs9a629yz",
@@ -1903,6 +1903,22 @@
       "movedAt": null,
       "contact": null,
       "originId": "1794964761036-1ap88u2go"
+    },
+    {
+      "id": "1794984435327-dt1rrqjgy",
+      "title": "数据库sql脚本",
+      "moduleId": "unsorted",
+      "status": "completed",
+      "completed": true,
+      "createdAt": 1794984435327,
+      "completedAt": 1794984437177,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1794984435327-dt1rrqjgy"
     }
   ],
   "modules": [
