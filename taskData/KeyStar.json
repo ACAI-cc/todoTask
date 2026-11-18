@@ -1887,6 +1887,22 @@
       "movedAt": null,
       "contact": null,
       "originId": "1793943321339-adwk5tvqw"
+    },
+    {
+      "id": "1794964761036-1ap88u2go",
+      "title": "摄像头第二种抓拍模式替换成grpc的nvr抓拍",
+      "moduleId": "not-started",
+      "status": "todo",
+      "completed": false,
+      "createdAt": 1794964761036,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1794964761036-1ap88u2go"
     }
   ],
   "modules": [
