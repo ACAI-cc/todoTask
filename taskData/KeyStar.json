@@ -1919,6 +1919,22 @@
       "movedAt": null,
       "contact": null,
       "originId": "1794984435327-dt1rrqjgy"
+    },
+    {
+      "id": "1795598601562-eb3zdqpvy",
+      "title": "批量更新采样图",
+      "moduleId": "not-started",
+      "status": "todo",
+      "completed": false,
+      "createdAt": 1795598601562,
+      "completedAt": null,
+      "quadrant": null,
+      "sourceModuleId": null,
+      "movedToModuleId": null,
+      "movedToTaskId": null,
+      "movedAt": null,
+      "contact": null,
+      "originId": "1795598601562-eb3zdqpvy"
     }
   ],
   "modules": [
